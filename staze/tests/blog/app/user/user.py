@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from blog.app.post.post import Post
 
 
-class User(orm.Model):
+class User(orm.Mapper):
     type = orm.column(orm.string(50))
     username = orm.column(orm.string(150))
     password = orm.column(orm.string(150))

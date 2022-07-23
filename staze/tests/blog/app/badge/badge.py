@@ -1,7 +1,7 @@
 from staze import orm
 
 
-class Badge(orm.Model):
+class Badge(orm.Mapper):
     name = orm.column(orm.string(150))
     advanced_users = orm.relationship(
         'AdvancedUser', backref='badge', foreign_keys='AdvancedUser.badge_id')

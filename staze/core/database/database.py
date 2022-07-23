@@ -4,7 +4,8 @@ from functools import wraps
 from typing import Callable, Any, TypeVar
 
 from warepy import format_message, snakefy
-from staze.core.database.model_not_found_error import ModelNotFoundError
+from staze.core.database.mapper_not_found_error import MapperNotFoundError
+from staze.core.model.model import Model
 from staze.tools.log import log
 from flask import Flask
 import flask_migrate
@@ -17,7 +18,7 @@ from staze.core.service.service import Service
 from .database_type_enum import DatabaseTypeEnum
 
 
-AnyModel = TypeVar('AnyModel', bound='orm.Model')
+AnyMapper = TypeVar('AnyMapper', bound='orm.Mapper')
 
 
 # TODO: Fix type hinting for decorated functions under this decorator.
@@ -37,7 +38,7 @@ def migration_implemented(func: Callable):
 
 
 class Mapper(BaseMapper):
-    """Base orm model responsible of holding model's data and at least
+    """Base orm model responsible of holding database model's data and at least
     it's basic CRUD operations.
 
     Contains create(), get_first(), get_all() and del_first() methods as
@@ -66,7 +67,7 @@ class Mapper(BaseMapper):
         return args
 
     @classmethod
-    def create(cls: AnyModel, **kwargs) -> AnyModel:
+    def create(cls: AnyMapper, **kwargs) -> AnyMapper:
         """Create model and return it.
         
         Accepts all given kwargs and thus is recommended to be redefined at
@@ -82,8 +83,8 @@ class Mapper(BaseMapper):
     def get_first(
             cls,
             order_by: object | list[object] | None = None,
-            **kwargs) -> orm.Model:
-        """Filter first ORM mapped model by given kwargs and return it.
+            **kwargs) -> orm.Mapper:
+        """Filter first ORM mapper model by given kwargs and return it.
         
         Raise:
             ValueError:
@@ -94,10 +95,10 @@ class Mapper(BaseMapper):
         if order_by is not None:
             query = cls._order_query(query, order_by)
 
-        model: orm.Model = query.first()
+        model: orm.Mapper = query.first()
 
         if not model:
-            raise ModelNotFoundError(model_name=cls.__name__, **kwargs)
+            raise MapperNotFoundError(model_name=cls.__name__, **kwargs)
         else:
             return model
 
@@ -106,8 +107,8 @@ class Mapper(BaseMapper):
             cls,
             order_by: object | list[object] | None = None,
             limit: int | None = None,
-            **kwargs) -> list[orm.Model]:
-        """Filter all ORM mapped models by given kwargs and return them.
+            **kwargs) -> list[orm.Mapper]:
+        """Filter all ORM mapper models by given kwargs and return them.
 
         Return:
             List of found models.
@@ -123,10 +124,10 @@ class Mapper(BaseMapper):
         elif limit:
             query = query.limit(limit)
 
-        models: list[orm.Model] = query.all()
+        models: list[orm.Mapper] = query.all()
 
         if type(models) is not list:
-            raise ModelNotFoundError(model_name=cls.__name__, **kwargs)
+            raise MapperNotFoundError(model_name=cls.__name__, **kwargs)
         else:
             # Return models even if it's empty list
             return models
@@ -138,7 +139,7 @@ class Mapper(BaseMapper):
             **kwargs) -> None:
         """Delete first accessed by `get_first()` method model."""
         database: Database = Database.instance()
-        model: orm.Model = cls.get_first(order_by=order_by, **kwargs)
+        model: orm.Mapper = cls.get_first(order_by=order_by, **kwargs)
 
         database.native_database.session.delete(model)
         database.commit()
@@ -150,13 +151,34 @@ class Mapper(BaseMapper):
         else:
             return query.order_by(order_by)
 
+    @classmethod
+    def get_model(cls) -> Model:
+        """Transform self to a Model instance.
+        
+        Model here should be defined explicitly at subclass of superclass
+        Model.
+
+        Example:
+            UserMapper has to define User(Model) subclass and redefine this
+            method to construct User(Model) class with values from the Mapper
+            it requires.
+            It's often useful for API calls to Mappers.
+
+        Returns:
+            Model:
+                Model subclass contained required to expose Mapper's
+                properties.
+        """
+        raise NotImplementedError(
+            'Should be re-implemented for Mapper-specific Model subclass')
+
 
 class orm:
     # Helper references for shorter writing at ORMs.
     # Ignore lines added for a workaround to fix issue:
     # https://github.com/microsoft/pylance-release/issues/187
     native_database = SQLAlchemy(model_class=Mapper)
-    Model: Any = native_database.Model 
+    Mapper: Any = native_database.Model 
     column = native_database.Column
     integer = native_database.Integer
     string = native_database.String

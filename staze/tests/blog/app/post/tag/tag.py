@@ -1,7 +1,7 @@
 from staze import orm, log
 
 
-class Tag(orm.Model):
+class Tag(orm.Mapper):
     name = orm.column(orm.string(100), unique=True)
 
     @classmethod

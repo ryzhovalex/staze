@@ -7,7 +7,7 @@ from .post_tag_table import PostTagTable
 from .tag.tag import Tag
 
 
-class Post(orm.Model):
+class Post(orm.Mapper):
     title = orm.column(orm.string(150))
     content = orm.column(orm.text)
     user_id = orm.column(orm.integer, orm.foreign_key(User.id))

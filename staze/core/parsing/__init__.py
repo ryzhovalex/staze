@@ -78,7 +78,7 @@ def parse_int(entity: int | str) -> int:
     return res
 
 
-OrmModel = TypeVar('OrmModel', bound=orm.Model)
+OrmModel = TypeVar('OrmModel', bound=orm.Mapper)
 
 def parse_models(
             Model: OrmModel,
@@ -111,7 +111,7 @@ def parse_models(
         if v is not None:
             method_kwargs[k] = v
 
-    models: list[orm.Model] = method(**method_kwargs)
+    models: list[orm.Mapper] = method(**method_kwargs)
 
     if filter_query_enum is FilterQueryEnum.FIRST:
         models = [models] 
