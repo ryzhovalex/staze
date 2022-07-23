@@ -5,7 +5,7 @@ from copy import copy
 from dataclasses import dataclass
 from typing import Any, TypeVar, Sequence
 
-from warepy import join_paths, load_yaml
+from warepy import join_paths, load_yaml, get_enum_values
 
 from staze.core.app.app_mode_enum import AppModeEnum
 from ..assembler.config_extension_enum import ConfigExtensionEnum
@@ -170,3 +170,68 @@ class Config(Model):
                     config[k] = join_paths(root_path, v)
                 else:
                     config[k] = v
+
+    @staticmethod
+    def find_config_files(
+            config_path: str) -> dict[str, dict[AppModeEnum, str]]:
+        """Accept path to config dir and return dict describing all paths to
+        configs for all app modes per service name.
+        
+        Return example:
+        ```python
+        {
+            "custom_service_name": {
+                AppModeEnum.PROD: "./some/path",
+                AppModeEnum.DEV: "./some/path",
+                AppModeEnum.TEST: "./some/path"
+            }
+        }
+        ```
+        """
+        source_map_by_name = {} 
+        for filename in os.listdir(config_path):
+            # Pick files only under config_dir.
+            if os.path.isfile(join_paths(config_path, filename)):
+                parts = filename.split(".")
+                file_path = join_paths(config_path, filename)
+
+                if len(parts) == 1:
+                    # Skip files without extension.
+                    continue
+                # Check if file has supported extension.
+                elif len(parts) == 2:
+                    # Config name shouldn't contain dots and thus we can grab
+                    # it right here.
+                    config_name = parts[0]
+                    if parts[1] in get_enum_values(ConfigExtensionEnum):
+                        # Add file without app mode automatically to
+                        # `prod`.
+                        if config_name not in source_map_by_name:
+                            source_map_by_name[config_name] = dict()
+                        source_map_by_name[config_name][
+                            AppModeEnum.PROD] = file_path
+                    else:
+                        # Skip files with unsupported extension.
+                        continue
+                elif len(parts) == 3:
+                    # Config name shouldn't contain dots and thus we can grab
+                    # it right here.
+                    config_name = parts[0]
+                    if parts[1] in get_enum_values(AppModeEnum) \
+                            and parts[2] in get_enum_values(
+                                ConfigExtensionEnum):
+                        # File has both normal extension and defined
+                        # app mode.
+                        if config_name not in source_map_by_name:
+                            source_map_by_name[config_name] = dict()
+                        source_map_by_name[config_name][
+                            AppModeEnum(parts[1])] = file_path
+                    else:
+                        # Unrecognized app mode or extension,
+                        # maybe raise warning?
+                        continue
+                else:
+                    # Skip files with names containing dots, e.g.
+                    # "dummy.new.prod.yaml".
+                    continue
+        return source_map_by_name

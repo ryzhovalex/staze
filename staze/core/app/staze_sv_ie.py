@@ -8,7 +8,6 @@ if TYPE_CHECKING:
     from staze.core.app.app import Staze
     from staze.tools.hints import CLIModeEnumUnion
 
-
  
 class StazeServiceModel(ServiceModel):
     """Injection cell with app itself which is required in any build."""

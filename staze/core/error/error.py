@@ -19,6 +19,7 @@ class Error(Exception):
     """
     DEFAULT_MESSAGE = ''
     DEFAULT_STATUS_CODE = 400
+    handler_function: Callable
 
     def __init__(
             self,

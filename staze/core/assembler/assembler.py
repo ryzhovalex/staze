@@ -9,11 +9,12 @@ from warepy import (
 )
 from flask_socketio import SocketIO
 import pytest
+from staze.core.assembler.assembler_error import AssemblerError
 from staze.core.cli.cli_database_enum import CLIDatabaseEnum
 from staze.core.cli.cli_error import CLIError
 from staze.core.cli.cli_helper_enum import CLIHelperEnum
 
-from staze.core.sock.socket import Socket
+from staze.core.socket.socket import Socket
 from staze.core.service.service import Service
 from staze.tools.hints import CLIModeEnumUnion
 from staze.tools.log import log
@@ -21,18 +22,10 @@ from staze.core.app.app_mode_enum import AppModeEnum
 from staze.core.cli.cli_run_enum import CLIRunEnum
 from staze.core.error.error import Error
 from staze.tools.error_handlers import handle_wildcard_builtin_error, handle_wildcard_error
-from staze. core.model.named_ie import NamedModel
-from staze. core.model.config_ie import ConfigModel
-from staze.core.app.staze_service_ie import StazeServiceModel
-from staze.core.database.database_service_ie import DatabaseServiceModel
-from staze.core.sock.sock_service_ie import SocketServiceModel
-from staze.core.service.service_ie import ServiceModel
-from staze.core.view.view_ie import ViewModel
-from staze.core.emt.emt_ie import EmtModel
-from staze.core.error.error_ie import ErrorModel
+from staze.core.model.config import Config
 
 from staze.core.database.database import Database
-from staze.core.app.app import Staze
+from staze.core.app.app import App
 from staze.tools.hints import CLIModeEnumUnion
 from .config_extension_enum import ConfigExtensionEnum
 
@@ -51,7 +44,7 @@ class Assembler(Singleton):
         extra_configs_by_name (optional):
             Configs to be appended to appropriate ones described in Build
             class. Defaults to None.
-            Contain config name as key (which is compared to ConfigModel
+            Contain config name as key (which is compared to Config
             name field) and configuration mapping as value, e.g.:
     ```python
     extra_configs_by_name = {
@@ -64,15 +57,6 @@ class Assembler(Singleton):
             Required in cases of calling this function not from actual
             project root (e.g. from tests) to set root path explicitly.
     """
-    DEFAULT_LOG_PARAMS = {
-        "path": "./var/logs/system.log",
-        "level": "DEBUG",
-        "format":
-            "{time:%Y.%m.%d at %H:%M:%S:%f%z} | {level} | {extra} >> {message}",
-        "rotation": "10 MB",
-        "serialize": False
-    }
-
     def __init__(
             self, 
             mode_enum: CLIModeEnumUnion,
@@ -101,20 +85,19 @@ class Assembler(Singleton):
             self.build = self._load_target_build(source_filename)
 
         # Use build in further assignment
-        self.service_ies = self.build.service_ies
-        self.view_ies = self.build.view_ies
-        self.error_ies: list[ErrorModel] = self.build.error_ies
-        self.emt_ies = self.build.emt_ies
+        self.service_classes = self.build.service_classes
+        self.view_classes = self.build.view_classes
+        self.error_classes = self.build.error_classes
         self.shell_processors = self.build.shell_processors
         self.cli_cmds = self.build.cli_cmds
         self.ctx_processor_func = self.build.ctx_processor_func
         self.each_request_func = self.build.each_request_func
         self.first_request_func = self.build.first_request_func
-        self.sock_ies = self.build.sock_ies
+        self.sock_classes = self.build.sock_classes
         self.default_sock_error_handler = self.build.default_sock_error_handler
-        self._assign_config_ies(self.build.config_dir)
+        self._build_configs(self.build.config_dir)
         # Traverse given configs and assign enabled builtin cells
-        self._assign_builtin_service_ies(mode_enum, host, port)
+        self._build_builtin_services(mode_enum, host, port)
         # Namespace to hold all initialized services. Should be used only for
         # testing purposes, when direct import of services are unavailable
         self._custom_services: dict[str, Any] = {}
@@ -124,7 +107,24 @@ class Assembler(Singleton):
             self.extra_configs_by_name = extra_configs_by_name
 
         self._register_self_singleton()
-        self._build_all()
+
+        self._build_log()
+        self._build_custom_services()
+        self._build_custom_views()
+        self._build_custom_errors()
+        self._build_custom_shell_processors()
+        self._build_custom_cli_cmds()
+        self._build_custom_socks()
+
+        # Call postponed build from created App.
+        try:
+            self.app.postbuild()
+        except NotImplementedError:
+            pass
+
+    @property
+    def custom_services(self):
+        return self._custom_services
 
     def _register_self_singleton(self):
         """Register self instance to Singleton instance.
@@ -154,144 +154,71 @@ class Assembler(Singleton):
                     "Could not resolve module spec for location: {}.",
                     module_location))
 
-    def get_staze(self) -> Staze:
-        return self.staze
-
-    def get_database(self) -> Database:
-        return self.database
-
-    def get_root_dir(self) -> str:
-        return self.root_dir
-
-    def get_mode_enum(self) -> CLIModeEnumUnion:
-        return self.mode_enum
-
-    def _assign_config_ies(self, config_dir: str) -> None:
+    def _build_configs(self, config_dir: str) -> None:
         """Traverse through config files under given config_dir and create 
-        ConfigModels from them.
+        Configs from them.
 
         Name taken from filename of config and should be the same as specified 
-        at config's target service_ie.name.
+        at config's target service_class.name.
 
         Names can contain additional extension like `name.prod.yaml` according
-        to appropriate Staze modes. These configs launched per each mode. Config
+        to appropriate app modes. These configs launched per each mode. Config
         without this extra extension, considered `prod` moded.
         """
-        self.config_ies: list[ConfigModel] = []
+        self.config_classes: list[Config] = []
 
         config_path: str = join_paths(self.root_dir, config_dir)
         source_map_by_name: dict[str, dict[AppModeEnum, str]] = \
-            self._find_config_files(config_path)
+            Config.find_config_files(config_path)
 
         for name, source_map in source_map_by_name.items():
-            self.config_ies.append(ConfigModel(
+            self.config_classes.append(Config(
                 name=name,
                 source_by_app_mode=source_map))
 
-    def _find_config_files(
-            self, config_path: str) -> dict[str, dict[AppModeEnum, str]]:
-        """Accept path to config dir and return dict describing all paths to
-        configs for all app modes per service name.
-        
-        Return example:
-        ```python
-        {
-            "custom_service_name": {
-                AppModeEnum.PROD: "./some/path",
-                AppModeEnum.DEV: "./some/path",
-                AppModeEnum.TEST: "./some/path"
-            }
-        }
-        ```
-        """
-        source_map_by_name = {} 
-        for filename in os.listdir(config_path):
-            # Pick files only under config_dir.
-            if os.path.isfile(join_paths(config_path, filename)):
-                parts = filename.split(".")
-                file_path = join_paths(config_path, filename)
-
-                if len(parts) == 1:
-                    # Skip files without extension.
-                    continue
-                # Check if file has supported extension.
-                elif len(parts) == 2:
-                    # Config name shouldn't contain dots and thus we can grab
-                    # it right here.
-                    config_name = parts[0]
-                    if parts[1] in get_enum_values(ConfigExtensionEnum):
-                        # Add file without app mode automatically to
-                        # `prod`.
-                        if config_name not in source_map_by_name:
-                            source_map_by_name[config_name] = dict()
-                        source_map_by_name[config_name][
-                            AppModeEnum.PROD] = file_path
-                    else:
-                        # Skip files with unsupported extension.
-                        continue
-                elif len(parts) == 3:
-                    # Config name shouldn't contain dots and thus we can grab
-                    # it right here.
-                    config_name = parts[0]
-                    if parts[1] in get_enum_values(AppModeEnum) \
-                            and parts[2] in get_enum_values(
-                                ConfigExtensionEnum):
-                        # File has both normal extension and defined
-                        # app mode.
-                        if config_name not in source_map_by_name:
-                            source_map_by_name[config_name] = dict()
-                        source_map_by_name[config_name][
-                            AppModeEnum(parts[1])] = file_path
-                    else:
-                        # Unrecognized app mode or extension,
-                        # maybe raise warning?
-                        continue
-                else:
-                    # Skip files with names containing dots, e.g.
-                    # "dummy.new.prod.yaml".
-                    continue
-        return source_map_by_name
-
-    def _assign_builtin_service_ies(
+    def _build_builtin_services(
             self, mode_enum: CLIModeEnumUnion, host: str, port: int) -> None:
         """Assign builting service cells if configuration file for its service
         exists.
         """
-        self.builtin_service_ies: list[Any] = [StazeServiceModel(
-            name="staze",
-            service_class=Staze,
-            mode_enum=mode_enum,
-            host=host,
-            port=port
-        )]
-        log_layers: list[str] = []
+        # First service to be initialized is always the App
+        self.app: App = App(
+            mode_enum=mode_enum, host=host, port=port, 
+            config=self._assemble_service_config('app'),
+            ctx_processor_func=self.ctx_processor_func,
+            each_request_func=self.each_request_func,
+            first_request_func=self.first_request_func)
+        layers_to_log: list[str] = []
 
         # Enable only modules with specified configs.
-        if self.config_ies:
+        # TODO:
+        #   Instead of catching ValueError, which could be anything, make
+        #   own custom error inside find_by_name()
+        if self.config_classes:
             try:
-                NamedModel.find_by_name("database", self.config_ies)
+                Config.find_by_name('database', self.config_classes)
             except ValueError:
                 pass
             else:
-                self.builtin_service_ies.append(DatabaseServiceModel(
-                    name="database",
-                    service_class=Database
-                ))
-                log_layers.append('database')
+                self.database: Database = Database(
+                    config=self._assemble_service_config('database'))
 
+                # Perform Database postponed setup
+                self._perform_database_postponed_setup()
+                layers_to_log.append('database')
             try:
-                NamedModel.find_by_name('socket', self.config_ies)
+                Config.find_by_name('socket', self.config_classes)
             except ValueError:
                 pass
             else:
-                self.builtin_service_ies.append(SocketServiceModel(
-                    name='socket',
-                    service_class=Socket))
+                self.socket = Socket(
+                    config=self._assemble_service_config('socket'),
+                    app=self.app)
                 self.socket_enabled = True
-                log_layers.append('socket')
+                layers_to_log.append('socket')
             
-            if log_layers:
-                log.info(f'Enabled layers: {", ".join(log_layers)}')
+            if layers_to_log:
+                log.info(f'Enabled layers: {", ".join(layers_to_log)}')
 
     def run(self):
         if isinstance(self.mode_enum, CLIRunEnum):
@@ -311,7 +238,7 @@ class Assembler(Singleton):
             else:
                 raise TypeError
         elif isinstance(self.mode_enum, CLIDatabaseEnum):
-            with self.staze.app_context():
+            with self.app.app_context():
                 if self.mode_enum is CLIDatabaseEnum.INIT:
                     self.database.init_migration()
                 elif self.mode_enum is CLIDatabaseEnum.MIGRATE:
@@ -324,39 +251,23 @@ class Assembler(Singleton):
             raise TypeError
 
     def _run_shell(self):
-        """Invoke Staze interactive shell."""
-        self.staze.run_shell()
+        """Invoke app interactive shell."""
+        self.app.run_shell()
 
     def _run_app(self):
-        self.staze.run()
+        self.app.run()
 
     def _run_test(self):
         log.info('Run tests')
         pytest.main(self.mode_args)
         
-    def _build_all(self) -> None:
-        """Send commands to build all given instances."""
-        self._build_log()
-        self._build_services()
-        self._build_views()
-        self._build_errors()
-        self._build_emts()
-        self._build_shell_processors()
-        self._build_cli_cmds()
-        self._build_socks()
-
-        # Call postponed build from created App.
-        try:
-            self.staze.postbuild()
-        except NotImplementedError:
-            pass
 
     def _build_log(self) -> None:
         """Call chain to build log."""
         # Try to find log config cell and build log class from it
-        if self.config_ies:
+        if self.config_classes:
             try:
-                log_config_ie = NamedModel.find_by_name("log", self.config_ies)
+                log_config_class = NamedModel.find_by_name("log", self.config_classes)
             except ValueError:
                 log_config = None
             else:
@@ -368,7 +279,7 @@ class Assembler(Singleton):
                 else:
                     # Assign dev app mode for all other app modes
                     app_mode_enum = AppModeEnum.DEV
-                log_config = log_config_ie.parse(
+                log_config = log_config_class.parse(
                     app_mode_enum=app_mode_enum,
                     root_path=self.root_dir, 
                     update_with=self.extra_configs_by_name.get("log", None)
@@ -386,13 +297,9 @@ class Assembler(Singleton):
                 log_kwargs[k] = v
         log.configure(**log_kwargs)
 
-    def _build_services(self) -> None:
-        self._run_builtin_service_ies()
-        self._run_custom_service_ies()
-
-    def _build_socks(self) -> None:
-        if self.sock_ies and self.socket_enabled:
-            for cell in self.sock_ies:
+    def _build_custom_socks(self) -> None:
+        if self.sock_classes and self.socket_enabled:
+            for cell in self.sock_classes:
                 socketio: SocketIO = self.socket.get_socketio()
 
                 # Register class for socketio namespace
@@ -400,6 +307,8 @@ class Assembler(Singleton):
                 socketio.on_namespace(cell.handler_class(cell.namespace))
                 # Also register error handler for the same namespace
                 socketio.on_error(cell.namespace)(cell.error_handler) 
+        elif self.sock_classes and not self.socket_enabled:
+            raise AssemblerError()
 
     def _perform_database_postponed_setup(self) -> None:
         """Postponed setup is required, because Database uses Flask app to init
@@ -408,52 +317,19 @@ class Assembler(Singleton):
 
         The setup_database requires native flask app to work with.
         """
-        self.database.setup(flask_app=self.staze.get_native_app())
-    
-    def _run_builtin_service_ies(self) -> None:
-        for cell in self.builtin_service_ies:
-            # Check for domain's config in given cells by comparing names and
-            # apply to service config if it exists
-            config = self._assemble_service_config(name=cell.name) 
+        self.database.setup(flask_app=self.app.get_native_app())
 
-            # Each builtin service should receive essential fields for their
-            # configs, such as root_path, because they cannot import Assembler
-            # due to circular import issue and get this fields by themselves
-            config["root_path"] = self.root_dir
-
-            # Initialize service.
-            if type(cell) is StazeServiceModel:
-                # Run special initialization with mode, host and port for Staze
-                # service
-                self.staze: Staze = cell.service_class(
-                    mode_enum=cell.mode_enum, host=cell.host, port=cell.port, 
-                    config=config,
-                    ctx_processor_func=self.ctx_processor_func,
-                    each_request_func=self.each_request_func,
-                    first_request_func=self.first_request_func)
-            elif type(cell) is DatabaseServiceModel:
-                self.database: Database = cell.service_class(config=config)
-                # Perform Database postponed setup
-                self._perform_database_postponed_setup()
-            elif type(cell) is SocketServiceModel:
-                self.socket = cell.service_class(config=config, app=self.staze)
-            else:
-                cell.service_class(config=config)
-
-    def _run_custom_service_ies(self) -> None:
-        if self.service_ies:
-            for cell in self.service_ies:
-                if self.config_ies:
-                    service_config = self._assemble_service_config(name=cell.name) 
+    def _build_custom_services(self) -> None:
+        if self.service_classes:
+            for service_class in self.service_classes:
+                if self.config_classes:
+                    service_config = self._assemble_service_config(
+                        name=service_class.get_config_name()) 
                 else:
                     service_config = {}
 
-                service: Service = cell.service_class(config=service_config)
+                service: Service = Service(config=service_config)
                 self._custom_services[cell.service_class.__name__] = service
-
-    @property
-    def custom_services(self):
-        return self._custom_services
 
     def _assemble_service_config(
             self,
@@ -465,8 +341,8 @@ class Assembler(Singleton):
         `is_errors_enabled = True` or return empty dict otherwise.
         """
         try:
-            config_ie_with_target_name: ConfigModel = NamedModel.find_by_name(
-                name, self.config_ies)
+            config_class_with_target_name: Config = Config.find_by_name(
+                name, self.config_classes)
         except ValueError:
             # If config not found and errors enabled, raise error.
             if is_errors_enabled:
@@ -477,10 +353,10 @@ class Assembler(Singleton):
             else:
                 config: dict[str, Any] = {}
         else:
-            if type(config_ie_with_target_name) is not ConfigModel:
+            if type(config_class_with_target_name) is not Config:
                 raise TypeError(format_message(
-                    "Type of cell should be ConfigModel, but {} received",
-                    type(config_ie_with_target_name)))
+                    "Type of cell should be Config, but {} received",
+                    type(config_class_with_target_name)))
             else:
                 app_mode_enum: AppModeEnum
                 if type(self.mode_enum) is CLIRunEnum:
@@ -488,10 +364,19 @@ class Assembler(Singleton):
                 else:
                     # Assign dev app mode for all other app modes.
                     app_mode_enum = AppModeEnum.DEV
-                config = config_ie_with_target_name.parse(
+                config = config_class_with_target_name.parse(
                     root_path=self.root_dir, 
                     update_with=self.extra_configs_by_name.get(name, None),
                     app_mode_enum=app_mode_enum)
+    
+        # Each builtin service should receive essential fields for their
+        # configs, such as root_path, because they cannot import Assembler
+        # due to circular import issue and get this fields by themselves
+        if 'root_path' in config:
+            raise ValueError(
+                'Service config shouldn\'t contain key `root_path`')
+        config["root_path"] = self.root_dir
+
         return config
 
     def _fetch_yaml_project_version(self) -> str:
@@ -505,46 +390,40 @@ class Assembler(Singleton):
         project_version = info_data["version"]
         return project_version
 
-    def _build_views(self) -> None:
+    def _build_custom_views(self) -> None:
         """Build all views by registering them to app."""
-        if self.view_ies:
-            for view_ie in self.view_ies:
-                self.staze.register_view(view_ie)
+        if self.view_classes:
+            for view_class in self.view_classes:
+                self.app.register_view(view_class)
 
-    def _build_emts(self) -> None:
-        """Build emts from given cells and inject Staze application controllers to each."""
-        if self.emt_ies:
-            for cell in self.emt_ies:
-                cell.emt_class(staze=self.staze)
-
-    def _build_shell_processors(self) -> None:
+    def _build_custom_shell_processors(self) -> None:
         if self.shell_processors:
-            self.staze.register_shell_processor(*self.shell_processors)
+            self.app.register_shell_processor(*self.shell_processors)
 
-    def _build_cli_cmds(self) -> None:
+    def _build_custom_cli_cmds(self) -> None:
         if self.cli_cmds:
-            self.staze.register_cli_cmd(*self.cli_cmds)
+            self.app.register_cli_cmd(*self.cli_cmds)
 
-    def _build_errors(self) -> None:
+    def _build_custom_errors(self) -> None:
         # TODO: Test case when user same error class registered twice (e.g. in
         # duplicate cells)
         wildcard_specified: bool = False
 
-        for error_ie in self.error_ies:
-            if type(error_ie.error_class) is Error:
+        for error_class in self.error_classes:
+            if type(error_class.error_class) is Error:
                 log.info('Wildcard Error handler specified')
                 wildcard_specified = True
-            self.staze.register_error(
-                error_ie.error_class, error_ie.handler_function)
+            self.app.register_error(
+                error_class.error_class, error_class.handler_function)
 
         # If wildcard handler is not specified, apply the default one
         if not wildcard_specified:
-            self.staze.register_error(
+            self.app.register_error(
                 Error, self.default_wildcard_error_handler_func)
 
         # Register wildcard builin error handler if this function is enabled
         # in config. Do not allow user to specify own builtin error handlers,
         # at least for now (maybe implement this in future)
-        if self.staze.wildcard_builtin_error_handler_enabled:
-            self.staze.register_error(
+        if self.app.wildcard_builtin_error_handler_enabled:
+            self.app.register_error(
                 Exception, handle_wildcard_builtin_error)

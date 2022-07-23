@@ -11,6 +11,15 @@ class log(Singleton):
     Simply said - it is a extra layer over `loguru.log` for keeping one log
     sink through all program.
     """
+    DEFAULT_LOG_PARAMS = {
+        "path": "./var/logs/system.log",
+        "level": "DEBUG",
+        "format":
+            "{time:%Y.%m.%d at %H:%M:%S:%f%z} | {level} | {extra} >> {message}",
+        "rotation": "10 MB",
+        "serialize": False
+    }
+
     native_log = loguru
 
     catch = native_log.catch
