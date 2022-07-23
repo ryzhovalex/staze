@@ -1,6 +1,6 @@
 from enum import Enum
 
 
-class DbTypeEnum(Enum):
+class DatabaseTypeEnum(Enum):
     SQLITE = "sqlite"
     PSQL = "psql"

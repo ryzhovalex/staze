@@ -16,7 +16,7 @@ from flask.ctx import AppContext, RequestContext
 from warepy import get_enum_values
 from staze.tools.log import log
 
-from staze.core.sv.sv import Sv
+from staze.core.service.service import Service
 from staze.tools.hints import CLIModeEnumUnion
 from staze.core.view.view_ie import ViewIe
 from staze.core.cli.cli_run_enum import CLIRunEnum
@@ -24,7 +24,7 @@ from .http_method_enum import HTTPMethodEnum
 from .turbo_action_enum import TurboActionEnum
 
 
-class Staze(Sv):
+class Staze(Service):
     """Core app's class.
     """
     def __init__(
@@ -71,7 +71,7 @@ class Staze(Sv):
         self.turbo = Turbo(self.native_app)
         # Initialize flask-session after all settings are applied
         self.flask_session = Session(self.native_app)
-        self._flush_redis_session_db()
+        self._flush_redis_session_database()
 
         self._init_app_daemons(
             ctx_processor_func=ctx_processor_func,
@@ -107,17 +107,17 @@ class Staze(Sv):
         if is_cors_enabled:
             CORS(self.native_app)
 
-    def _flush_redis_session_db(self) -> None:
-        # Flush redis session db if mode is not `prod`. 
+    def _flush_redis_session_database(self) -> None:
+        # Flush redis session database if mode is not `prod`. 
         if self.mode_enum is not CLIRunEnum.PROD: 
             if self.native_app.config.get("SESSION_TYPE", None):
                 if self.native_app.config["SESSION_TYPE"] == "redis":
                     log.info(
-                        "Flush session redis Db because"
+                        "Flush session redis Database because"
                         " of non-production run.")
                     session_interface = self.native_app.session_interface
                     redis = session_interface.redis  # type: ignore
-                    redis.flushdb()
+                    redis.flushdatabase()
             else:
                 # Apply default null interface, basically do nothing.
                 pass

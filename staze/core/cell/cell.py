@@ -2,7 +2,7 @@ from dataclasses import dataclass, fields
 from typing import Any, ClassVar
 
 from schema import Schema
-from staze.core.db.db import orm
+from staze.core.database.database import orm
 from staze.tools.log import log
 from staze.core.cell.cell_error import CellError
 from warepy import snakefy

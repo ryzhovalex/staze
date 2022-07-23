@@ -3,14 +3,14 @@ from typing import TYPE_CHECKING
 from flask_socketio import (
     SocketIO, send, emit, join_room, leave_room, SocketIOTestClient)
 
-from staze.core.sv.sv import Sv
+from staze.core.service.service import Service
 from staze.tools.log import log
 
 if TYPE_CHECKING:
     from staze.core.app.app import Staze
 
 
-class Socket(Sv):
+class Socket(Service):
     def __init__(self, config: dict, app: 'Staze') -> None:
         super().__init__(config)
         self.app = app

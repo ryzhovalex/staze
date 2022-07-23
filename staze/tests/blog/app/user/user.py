@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING
-from staze import orm, Db
+from staze import orm, Database
 
 from blog.app.badge.badge import Badge
 from werkzeug.security import generate_password_hash, check_password_hash

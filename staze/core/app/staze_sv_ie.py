@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable
 
-from staze.core.sv.sv_ie import SvIe
+from staze.core.service.service_ie import ServiceIe
 
 if TYPE_CHECKING:
     from staze.core.app.app import Staze
@@ -10,9 +10,9 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class StazeSvIe(SvIe):
+class StazeServiceIe(ServiceIe):
     """Injection cell with app itself which is required in any build."""
-    sv_class: type[Staze]
+    service_class: type[Staze]
     mode_enum: CLIModeEnumUnion
     host: str
     port: int

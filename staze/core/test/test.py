@@ -5,7 +5,7 @@ from werkzeug.test import TestResponse
 
 from staze.core.app.app import Staze
 from staze.core import validation, parsing
-from staze.core.db.db import Db
+from staze.core.database.database import Database
 from staze.core.sock.socket import Socket
 from staze.tools.get_root_dir import get_root_dir
 
@@ -39,17 +39,17 @@ class Test:
         yield app
 
     @fixture
-    def db(self, app: Staze):
-        db: Db = Db.instance()
+    def database(self, app: Staze):
+        database: Database = Database.instance()
 
         with app.app_context():
-            db.drop_all()
-            db.create_all()
+            database.drop_all()
+            database.create_all()
 
-        yield db
+        yield database
 
         with app.app_context():
-            db.drop_all()
+            database.drop_all()
 
     @fixture
     def socket(self) -> Socket:

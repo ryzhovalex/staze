@@ -1,5 +1,5 @@
-from staze import Sv, log, Sock
+from staze import Service, log, Sock
 
 
-class ChatSv(Sv):
+class ChatService(Service):
     pass

@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class CLIDbEnum(Enum):
+class CLIDatabaseEnum(Enum):
     INIT = "init"
     MIGRATE = "migrate"
     UPGRADE = "upgrade"

@@ -9,12 +9,12 @@ from warepy import (
 )
 from flask_socketio import SocketIO
 import pytest
-from staze.core.cli.cli_db_enum import CLIDbEnum
+from staze.core.cli.cli_database_enum import CLIDatabaseEnum
 from staze.core.cli.cli_error import CLIError
 from staze.core.cli.cli_helper_enum import CLIHelperEnum
 
 from staze.core.sock.socket import Socket
-from staze.core.sv.sv import Sv
+from staze.core.service.service import Service
 from staze.tools.hints import CLIModeEnumUnion
 from staze.tools.log import log
 from staze.core.app.app_mode_enum import AppModeEnum
@@ -23,15 +23,15 @@ from staze.core.error.error import Error
 from staze.tools.error_handlers import handle_wildcard_builtin_error, handle_wildcard_error
 from staze.core.ie.named_ie import NamedIe
 from staze.core.ie.config_ie import ConfigIe
-from staze.core.app.staze_sv_ie import StazeSvIe
-from staze.core.db.db_sv_ie import DbSvIe
-from staze.core.sock.sock_sv_ie import SocketSvIe
-from staze.core.sv.sv_ie import SvIe
+from staze.core.app.staze_service_ie import StazeServiceIe
+from staze.core.database.database_service_ie import DatabaseServiceIe
+from staze.core.sock.sock_service_ie import SocketServiceIe
+from staze.core.service.service_ie import ServiceIe
 from staze.core.view.view_ie import ViewIe
 from staze.core.emt.emt_ie import EmtIe
 from staze.core.error.error_ie import ErrorIe
 
-from staze.core.db.db import Db
+from staze.core.database.database import Database
 from staze.core.app.app import Staze
 from staze.tools.hints import CLIModeEnumUnion
 from .config_extension_enum import ConfigExtensionEnum
@@ -56,7 +56,7 @@ class Assembler(Singleton):
     ```python
     extra_configs_by_name = {
         "app": {"TESTING": True},
-        "db": {"db_uri": "sqlite3:///:memory:"}
+        "database": {"database_uri": "sqlite3:///:memory:"}
     }
     ```
         root_dir (optional):
@@ -101,7 +101,7 @@ class Assembler(Singleton):
             self.build = self._load_target_build(source_filename)
 
         # Use build in further assignment
-        self.sv_ies = self.build.sv_ies
+        self.service_ies = self.build.service_ies
         self.view_ies = self.build.view_ies
         self.error_ies: list[ErrorIe] = self.build.error_ies
         self.emt_ies = self.build.emt_ies
@@ -114,10 +114,10 @@ class Assembler(Singleton):
         self.default_sock_error_handler = self.build.default_sock_error_handler
         self._assign_config_ies(self.build.config_dir)
         # Traverse given configs and assign enabled builtin cells
-        self._assign_builtin_sv_ies(mode_enum, host, port)
+        self._assign_builtin_service_ies(mode_enum, host, port)
         # Namespace to hold all initialized services. Should be used only for
         # testing purposes, when direct import of services are unavailable
-        self._custom_svs: dict[str, Any] = {}
+        self._custom_services: dict[str, Any] = {}
 
         # Add extra configs
         if extra_configs_by_name:
@@ -157,8 +157,8 @@ class Assembler(Singleton):
     def get_staze(self) -> Staze:
         return self.staze
 
-    def get_db(self) -> Db:
-        return self.db
+    def get_database(self) -> Database:
+        return self.database
 
     def get_root_dir(self) -> str:
         return self.root_dir
@@ -171,7 +171,7 @@ class Assembler(Singleton):
         ConfigIes from them.
 
         Name taken from filename of config and should be the same as specified 
-        at config's target sv_ie.name.
+        at config's target service_ie.name.
 
         Names can contain additional extension like `name.prod.yaml` according
         to appropriate Staze modes. These configs launched per each mode. Config
@@ -191,12 +191,12 @@ class Assembler(Singleton):
     def _find_config_files(
             self, config_path: str) -> dict[str, dict[AppModeEnum, str]]:
         """Accept path to config dir and return dict describing all paths to
-        configs for all app modes per sv name.
+        configs for all app modes per service name.
         
         Return example:
         ```python
         {
-            "custom_sv_name": {
+            "custom_service_name": {
                 AppModeEnum.PROD: "./some/path",
                 AppModeEnum.DEV: "./some/path",
                 AppModeEnum.TEST: "./some/path"
@@ -252,14 +252,14 @@ class Assembler(Singleton):
                     continue
         return source_map_by_name
 
-    def _assign_builtin_sv_ies(
+    def _assign_builtin_service_ies(
             self, mode_enum: CLIModeEnumUnion, host: str, port: int) -> None:
-        """Assign builting sv cells if configuration file for its sv
+        """Assign builting service cells if configuration file for its service
         exists.
         """
-        self.builtin_sv_ies: list[Any] = [StazeSvIe(
+        self.builtin_service_ies: list[Any] = [StazeServiceIe(
             name="staze",
-            sv_class=Staze,
+            service_class=Staze,
             mode_enum=mode_enum,
             host=host,
             port=port
@@ -269,24 +269,24 @@ class Assembler(Singleton):
         # Enable only modules with specified configs.
         if self.config_ies:
             try:
-                NamedIe.find_by_name("db", self.config_ies)
+                NamedIe.find_by_name("database", self.config_ies)
             except ValueError:
                 pass
             else:
-                self.builtin_sv_ies.append(DbSvIe(
-                    name="db",
-                    sv_class=Db
+                self.builtin_service_ies.append(DatabaseServiceIe(
+                    name="database",
+                    service_class=Database
                 ))
-                log_layers.append('db')
+                log_layers.append('database')
 
             try:
                 NamedIe.find_by_name('socket', self.config_ies)
             except ValueError:
                 pass
             else:
-                self.builtin_sv_ies.append(SocketSvIe(
+                self.builtin_service_ies.append(SocketServiceIe(
                     name='socket',
-                    sv_class=Socket))
+                    service_class=Socket))
                 self.socket_enabled = True
                 log_layers.append('socket')
             
@@ -310,14 +310,14 @@ class Assembler(Singleton):
                 raise NotImplementedError
             else:
                 raise TypeError
-        elif isinstance(self.mode_enum, CLIDbEnum):
+        elif isinstance(self.mode_enum, CLIDatabaseEnum):
             with self.staze.app_context():
-                if self.mode_enum is CLIDbEnum.INIT:
-                    self.db.init_migration()
-                elif self.mode_enum is CLIDbEnum.MIGRATE:
-                    self.db.migrate_migration()
-                elif self.mode_enum is CLIDbEnum.UPGRADE:
-                    self.db.upgrade_migration()
+                if self.mode_enum is CLIDatabaseEnum.INIT:
+                    self.database.init_migration()
+                elif self.mode_enum is CLIDatabaseEnum.MIGRATE:
+                    self.database.migrate_migration()
+                elif self.mode_enum is CLIDatabaseEnum.UPGRADE:
+                    self.database.upgrade_migration()
                 else:
                     raise TypeError
         else:
@@ -337,7 +337,7 @@ class Assembler(Singleton):
     def _build_all(self) -> None:
         """Send commands to build all given instances."""
         self._build_log()
-        self._build_svs()
+        self._build_services()
         self._build_views()
         self._build_errors()
         self._build_emts()
@@ -386,9 +386,9 @@ class Assembler(Singleton):
                 log_kwargs[k] = v
         log.configure(**log_kwargs)
 
-    def _build_svs(self) -> None:
-        self._run_builtin_sv_ies()
-        self._run_custom_sv_ies()
+    def _build_services(self) -> None:
+        self._run_builtin_service_ies()
+        self._run_custom_service_ies()
 
     def _build_socks(self) -> None:
         if self.sock_ies and self.socket_enabled:
@@ -401,64 +401,64 @@ class Assembler(Singleton):
                 # Also register error handler for the same namespace
                 socketio.on_error(cell.namespace)(cell.error_handler) 
 
-    def _perform_db_postponed_setup(self) -> None:
-        """Postponed setup is required, because Db uses Flask app to init
-        native SQLAlchemy db inside, so it's possible only after App
+    def _perform_database_postponed_setup(self) -> None:
+        """Postponed setup is required, because Database uses Flask app to init
+        native SQLAlchemy database inside, so it's possible only after App
         initialization.
 
-        The setup_db requires native flask app to work with.
+        The setup_database requires native flask app to work with.
         """
-        self.db.setup(flask_app=self.staze.get_native_app())
+        self.database.setup(flask_app=self.staze.get_native_app())
     
-    def _run_builtin_sv_ies(self) -> None:
-        for cell in self.builtin_sv_ies:
+    def _run_builtin_service_ies(self) -> None:
+        for cell in self.builtin_service_ies:
             # Check for domain's config in given cells by comparing names and
-            # apply to sv config if it exists
-            config = self._assemble_sv_config(name=cell.name) 
+            # apply to service config if it exists
+            config = self._assemble_service_config(name=cell.name) 
 
-            # Each builtin sv should receive essential fields for their
+            # Each builtin service should receive essential fields for their
             # configs, such as root_path, because they cannot import Assembler
             # due to circular import issue and get this fields by themselves
             config["root_path"] = self.root_dir
 
-            # Initialize sv.
-            if type(cell) is StazeSvIe:
+            # Initialize service.
+            if type(cell) is StazeServiceIe:
                 # Run special initialization with mode, host and port for Staze
-                # sv
-                self.staze: Staze = cell.sv_class(
+                # service
+                self.staze: Staze = cell.service_class(
                     mode_enum=cell.mode_enum, host=cell.host, port=cell.port, 
                     config=config,
                     ctx_processor_func=self.ctx_processor_func,
                     each_request_func=self.each_request_func,
                     first_request_func=self.first_request_func)
-            elif type(cell) is DbSvIe:
-                self.db: Db = cell.sv_class(config=config)
-                # Perform Db postponed setup
-                self._perform_db_postponed_setup()
-            elif type(cell) is SocketSvIe:
-                self.socket = cell.sv_class(config=config, app=self.staze)
+            elif type(cell) is DatabaseServiceIe:
+                self.database: Database = cell.service_class(config=config)
+                # Perform Database postponed setup
+                self._perform_database_postponed_setup()
+            elif type(cell) is SocketServiceIe:
+                self.socket = cell.service_class(config=config, app=self.staze)
             else:
-                cell.sv_class(config=config)
+                cell.service_class(config=config)
 
-    def _run_custom_sv_ies(self) -> None:
-        if self.sv_ies:
-            for cell in self.sv_ies:
+    def _run_custom_service_ies(self) -> None:
+        if self.service_ies:
+            for cell in self.service_ies:
                 if self.config_ies:
-                    sv_config = self._assemble_sv_config(name=cell.name) 
+                    service_config = self._assemble_service_config(name=cell.name) 
                 else:
-                    sv_config = {}
+                    service_config = {}
 
-                sv: Sv = cell.sv_class(config=sv_config)
-                self._custom_svs[cell.sv_class.__name__] = sv
+                service: Service = cell.service_class(config=service_config)
+                self._custom_services[cell.service_class.__name__] = service
 
     @property
-    def custom_svs(self):
-        return self._custom_svs
+    def custom_services(self):
+        return self._custom_services
 
-    def _assemble_sv_config(
+    def _assemble_service_config(
             self,
             name: str, is_errors_enabled: bool = False) -> dict[str, Any]:
-        """Check for sv's config in config cells by comparing its given
+        """Check for service's config in config cells by comparing its given
         name and return it as dict.
 
         If appropriate config hasn't been found, raise ValueError if

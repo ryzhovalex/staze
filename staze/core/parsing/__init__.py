@@ -5,7 +5,7 @@ from werkzeug.datastructures import MultiDict
 from staze.core.parsing.parsing_error import (
     IntParsingError, KeyParsingError, ParsingError)
 from staze.tools.query_parameter_error import QueryParameterError
-from staze.core.db.db import orm
+from staze.core.database.database import orm
 
 from staze.tools.filter_query_enum import FilterQueryEnum
 from staze.core.validation import validate

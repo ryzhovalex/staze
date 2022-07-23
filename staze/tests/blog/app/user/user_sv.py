@@ -1,7 +1,7 @@
-from staze import Sv, log
+from staze import Service, log
 
 
-class UserSv(Sv):
+class UserService(Service):
     def __init__(self, config: dict) -> None:
         super().__init__(config)
 

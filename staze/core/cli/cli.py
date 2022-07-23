@@ -17,7 +17,7 @@ from staze.core.assembler.assembler import Assembler
 from staze.core import validation, parsing
 from staze.tools.hints import CLIModeEnumUnion
 from .cli_run_enum import CLIRunEnum
-from .cli_db_enum import CLIDbEnum
+from .cli_database_enum import CLIDatabaseEnum
 from .cli_helper_enum import CLIHelperEnum
 from staze.core.cli.cli_input_ie import CLIInputIe
 

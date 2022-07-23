@@ -3,7 +3,7 @@ import sys
 
 from pytest import fixture
 from staze import (
-    Build, SvIe, ViewIe, SockIe)
+    Build, ServiceIe, ViewIe, SockIe)
 
 from staze.tests.blog.build import build as _blog_build
 from staze.tools.log import log

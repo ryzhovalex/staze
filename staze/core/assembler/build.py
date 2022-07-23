@@ -6,7 +6,7 @@ from staze.core.assembler.assembler import Assembler
 from staze.core.sock.default_sock_error_handler import default_sock_error_handler
 from staze.core.sock.sock_ie import SockIe
 
-from staze.core.sv.sv_ie import SvIe
+from staze.core.service.service_ie import ServiceIe
 from staze.core.view.view_ie import ViewIe
 from staze.core.emt.emt_ie import EmtIe
 from staze.core.error.error_ie import ErrorIe
@@ -22,7 +22,7 @@ class Build:
         self,
         version: str = "",
         config_dir: str = "./src/configs",
-        sv_ies: list[SvIe] = [],
+        service_ies: list[ServiceIe] = [],
         view_ies: list[ViewIe] = [],
         emt_ies: list[EmtIe] = [],
         error_ies: list[ErrorIe] = [],
@@ -36,7 +36,7 @@ class Build:
     ) -> None:
         self.version = version
         self.config_dir = config_dir
-        self.sv_ies = sv_ies
+        self.service_ies = service_ies
         self.view_ies = view_ies
         self.emt_ies = emt_ies
         self.error_ies = error_ies

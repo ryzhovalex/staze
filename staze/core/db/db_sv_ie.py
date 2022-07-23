@@ -2,15 +2,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from dataclasses import dataclass
 
-from staze.core.sv.sv_ie import SvIe
+from staze.core.service.service_ie import ServiceIe
 
 if TYPE_CHECKING:
-    from staze.core.db.db import Db
+    from staze.core.database.database import Database
 
 
 @dataclass
-class DbSvIe(SvIe):
-    """Injection cell with Db itself which can be applied to created
+class DatabaseServiceIe(ServiceIe):
+    """Injection cell with Database itself which can be applied to created
     application.
     """
-    sv_class: type[Db]
+    service_class: type[Database]
