@@ -2,39 +2,37 @@ from ctypes import c_size_t
 from dataclasses import dataclass
 from typing import ClassVar
 from pytest import fixture
-from staze.core.ie.ie import Ie
+from staze.core.model.model import Model
 from staze.core.test.mock import Mock
 
 
-@dataclass
-class CustomIe(Ie):
+class CustomModel(Model):
     name: str
     age: int
     tags: set[str]
 
 
-@dataclass
-class CustomIeMock(Mock):
+class CustomModelMock(Mock):
     name: str
     age: int
     tags: set[str]
 
 
 @fixture
-def custom_ie_mock() -> CustomIeMock:
-    return CustomIeMock(name='Test', age=12, tags={'hero', 'reckless'})
+def custom_ie_mock() -> CustomModelMock:
+    return CustomModelMock(name='Test', age=12, tags={'hero', 'reckless'})
 
 
 @fixture
-def custom_ie(custom_ie_mock: CustomIeMock) -> CustomIe:
-    return CustomIe(
+def custom_ie(custom_ie_mock: CustomModelMock) -> CustomModel:
+    return CustomModel(
         name=custom_ie_mock.name,
         age=custom_ie_mock.age,
         tags=custom_ie_mock.tags)
 
 
-class TestIe():
-    def test_custom(self, custom_ie: CustomIe, custom_ie_mock: CustomIeMock):
+class TestModel():
+    def test_custom(self, custom_ie: CustomModel, custom_ie_mock: CustomModelMock):
         expected_json: dict = {
             'custom': {
                 'name': custom_ie_mock.name,

@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from staze.core.ie.ie import Ie
+from staze. core.model.model import Model
 from staze.tools.hints import CLIModeEnumUnion
 
 
-@dataclass
-class CLIInputIe(Ie):
+ 
+class CLIInputModel(Model):
     mode_enum: CLIModeEnumUnion
     mode_args: list[str]
 

@@ -4,13 +4,12 @@ import types
 from staze.tools.log import log
 from typing import ClassVar
 from warepy import snakefy
-from schema import Schema, Or, Optional
+from pydantic import BaseModel
 
 
-@dataclass
-class Ie:
+class Model(BaseModel):
     """Basic interface dataclass."""
-    FORMATTED_NAME: ClassVar[str | None] = None
+    _formatted_name: ClassVar[str | None] = None
 
     @property
     def formatted_name(self) -> str:
@@ -29,8 +28,8 @@ class Ie:
                 Dictionary with interface decomposed to structure for API:
         ```
         {
-            ie_formatted_name: {
-                ...ie structure    
+           model_formatted_name: {
+                ...model structure    
             }
         }
         ```
@@ -55,8 +54,8 @@ class Ie:
 
         # Decompose all keys in self dict
         for k, v in self.__dict__.items():
-            if type(v) is Ie:
-                # For folded Ies make their own json decompositions
+            if type(v) is Model:
+                # For folded Models make their own json decompositions
                 res_dict[k] = v.get_inner_json()
             else:
                 res_dict[k] = v
@@ -73,7 +72,7 @@ class Ie:
         }
 
     @classmethod
-    def _get_formatted_name(cls, base_name: str = 'Ie') -> str:
+    def _get_formatted_name(cls, base_name: str = 'Model') -> str:
         name: str
 
         if cls.FORMATTED_NAME:

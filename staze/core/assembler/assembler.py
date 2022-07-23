@@ -21,15 +21,15 @@ from staze.core.app.app_mode_enum import AppModeEnum
 from staze.core.cli.cli_run_enum import CLIRunEnum
 from staze.core.error.error import Error
 from staze.tools.error_handlers import handle_wildcard_builtin_error, handle_wildcard_error
-from staze.core.ie.named_ie import NamedIe
-from staze.core.ie.config_ie import ConfigIe
-from staze.core.app.staze_service_ie import StazeServiceIe
-from staze.core.database.database_service_ie import DatabaseServiceIe
-from staze.core.sock.sock_service_ie import SocketServiceIe
-from staze.core.service.service_ie import ServiceIe
-from staze.core.view.view_ie import ViewIe
-from staze.core.emt.emt_ie import EmtIe
-from staze.core.error.error_ie import ErrorIe
+from staze. core.model.named_ie import NamedModel
+from staze. core.model.config_ie import ConfigModel
+from staze.core.app.staze_service_ie import StazeServiceModel
+from staze.core.database.database_service_ie import DatabaseServiceModel
+from staze.core.sock.sock_service_ie import SocketServiceModel
+from staze.core.service.service_ie import ServiceModel
+from staze.core.view.view_ie import ViewModel
+from staze.core.emt.emt_ie import EmtModel
+from staze.core.error.error_ie import ErrorModel
 
 from staze.core.database.database import Database
 from staze.core.app.app import Staze
@@ -51,7 +51,7 @@ class Assembler(Singleton):
         extra_configs_by_name (optional):
             Configs to be appended to appropriate ones described in Build
             class. Defaults to None.
-            Contain config name as key (which is compared to ConfigIe
+            Contain config name as key (which is compared to ConfigModel
             name field) and configuration mapping as value, e.g.:
     ```python
     extra_configs_by_name = {
@@ -103,7 +103,7 @@ class Assembler(Singleton):
         # Use build in further assignment
         self.service_ies = self.build.service_ies
         self.view_ies = self.build.view_ies
-        self.error_ies: list[ErrorIe] = self.build.error_ies
+        self.error_ies: list[ErrorModel] = self.build.error_ies
         self.emt_ies = self.build.emt_ies
         self.shell_processors = self.build.shell_processors
         self.cli_cmds = self.build.cli_cmds
@@ -168,7 +168,7 @@ class Assembler(Singleton):
 
     def _assign_config_ies(self, config_dir: str) -> None:
         """Traverse through config files under given config_dir and create 
-        ConfigIes from them.
+        ConfigModels from them.
 
         Name taken from filename of config and should be the same as specified 
         at config's target service_ie.name.
@@ -177,14 +177,14 @@ class Assembler(Singleton):
         to appropriate Staze modes. These configs launched per each mode. Config
         without this extra extension, considered `prod` moded.
         """
-        self.config_ies: list[ConfigIe] = []
+        self.config_ies: list[ConfigModel] = []
 
         config_path: str = join_paths(self.root_dir, config_dir)
         source_map_by_name: dict[str, dict[AppModeEnum, str]] = \
             self._find_config_files(config_path)
 
         for name, source_map in source_map_by_name.items():
-            self.config_ies.append(ConfigIe(
+            self.config_ies.append(ConfigModel(
                 name=name,
                 source_by_app_mode=source_map))
 
@@ -257,7 +257,7 @@ class Assembler(Singleton):
         """Assign builting service cells if configuration file for its service
         exists.
         """
-        self.builtin_service_ies: list[Any] = [StazeServiceIe(
+        self.builtin_service_ies: list[Any] = [StazeServiceModel(
             name="staze",
             service_class=Staze,
             mode_enum=mode_enum,
@@ -269,22 +269,22 @@ class Assembler(Singleton):
         # Enable only modules with specified configs.
         if self.config_ies:
             try:
-                NamedIe.find_by_name("database", self.config_ies)
+                NamedModel.find_by_name("database", self.config_ies)
             except ValueError:
                 pass
             else:
-                self.builtin_service_ies.append(DatabaseServiceIe(
+                self.builtin_service_ies.append(DatabaseServiceModel(
                     name="database",
                     service_class=Database
                 ))
                 log_layers.append('database')
 
             try:
-                NamedIe.find_by_name('socket', self.config_ies)
+                NamedModel.find_by_name('socket', self.config_ies)
             except ValueError:
                 pass
             else:
-                self.builtin_service_ies.append(SocketServiceIe(
+                self.builtin_service_ies.append(SocketServiceModel(
                     name='socket',
                     service_class=Socket))
                 self.socket_enabled = True
@@ -356,7 +356,7 @@ class Assembler(Singleton):
         # Try to find log config cell and build log class from it
         if self.config_ies:
             try:
-                log_config_ie = NamedIe.find_by_name("log", self.config_ies)
+                log_config_ie = NamedModel.find_by_name("log", self.config_ies)
             except ValueError:
                 log_config = None
             else:
@@ -422,7 +422,7 @@ class Assembler(Singleton):
             config["root_path"] = self.root_dir
 
             # Initialize service.
-            if type(cell) is StazeServiceIe:
+            if type(cell) is StazeServiceModel:
                 # Run special initialization with mode, host and port for Staze
                 # service
                 self.staze: Staze = cell.service_class(
@@ -431,11 +431,11 @@ class Assembler(Singleton):
                     ctx_processor_func=self.ctx_processor_func,
                     each_request_func=self.each_request_func,
                     first_request_func=self.first_request_func)
-            elif type(cell) is DatabaseServiceIe:
+            elif type(cell) is DatabaseServiceModel:
                 self.database: Database = cell.service_class(config=config)
                 # Perform Database postponed setup
                 self._perform_database_postponed_setup()
-            elif type(cell) is SocketServiceIe:
+            elif type(cell) is SocketServiceModel:
                 self.socket = cell.service_class(config=config, app=self.staze)
             else:
                 cell.service_class(config=config)
@@ -465,7 +465,7 @@ class Assembler(Singleton):
         `is_errors_enabled = True` or return empty dict otherwise.
         """
         try:
-            config_ie_with_target_name: ConfigIe = NamedIe.find_by_name(
+            config_ie_with_target_name: ConfigModel = NamedModel.find_by_name(
                 name, self.config_ies)
         except ValueError:
             # If config not found and errors enabled, raise error.
@@ -477,9 +477,9 @@ class Assembler(Singleton):
             else:
                 config: dict[str, Any] = {}
         else:
-            if type(config_ie_with_target_name) is not ConfigIe:
+            if type(config_ie_with_target_name) is not ConfigModel:
                 raise TypeError(format_message(
-                    "Type of cell should be ConfigIe, but {} received",
+                    "Type of cell should be ConfigModel, but {} received",
                     type(config_ie_with_target_name)))
             else:
                 app_mode_enum: AppModeEnum

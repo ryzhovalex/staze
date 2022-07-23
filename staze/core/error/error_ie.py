@@ -1,12 +1,12 @@
 from typing import Callable
 from dataclasses import dataclass
 
-from staze.core.ie.ie import Ie
+from staze. core.model.model import Model
 
 from .error import Error
 
 
-@dataclass
-class ErrorIe(Ie):
+ 
+class ErrorModel(Model):
     error_class: type[Error]
     handler_function: Callable

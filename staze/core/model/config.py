@@ -3,35 +3,51 @@ import os
 import json
 from copy import copy
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypeVar, Sequence
 
 from warepy import join_paths, load_yaml
 
 from staze.core.app.app_mode_enum import AppModeEnum
 from ..assembler.config_extension_enum import ConfigExtensionEnum
-from .named_ie import NamedIe
+from staze.core.model.model import Model
 from staze.tools.log import log
 
 
-@dataclass
-class ConfigIe(NamedIe):
-    """Config cell which can be used to load configs to appropriate instance's
+class Config(Model):
+    """Config config which can be used to load configs to appropriate instance's
     configuration by name."""
+    name: str
     source_by_app_mode: dict[AppModeEnum, str]
+
+    @staticmethod
+    def find_by_name(name: str, configs: list['Config']) -> 'Config':
+        """Traverse through given list of configs and return first one with
+        specified name.
+        
+        Raise:
+            ValueError: 
+                No config with given name found.
+        """
+        for config in configs:
+            if config.name == name:
+                return config
+
+        raise ValueError(
+            "No config found with given name: {}", name)
 
     def parse(
             self, app_mode_enum: AppModeEnum, root_path: str,
             update_with: dict[str, Any] | None = None,
             convert_keys_to_lower: bool = True) -> dict[str, Any]:
-        """Parse config cell and return configuration dictionary.
+        """Parse config config and return configuration dictionary.
 
         Args:
             app_mode_enum:
                 App mode to run appropriate config.
             root_path:
-                Path to join config cell source with.
+                Path to join config config source with.
             update_with (optional):
-                Dictionary to update config cell mapping with.
+                Dictionary to update config config mapping with.
                 Defaults to None.
             convert_keys_to_lower (optional):
                 If true, all keys from origin mapping and mapping from
@@ -39,7 +55,7 @@ class ConfigIe(NamedIe):
         
         Raise:
             ValueError:
-                If given config cell's source has unrecognized extension.
+                If given config config's source has unrecognized extension.
         """
         res_config: dict[str, Any] = {}
 
@@ -118,7 +134,7 @@ class ConfigIe(NamedIe):
                 if config is None:
                     raise NotImplementedError(self.name)
             case _:
-                raise ValueError("Unrecognized config cell source's extension")
+                raise ValueError("Unrecognized config config source's extension")
         return config
     
     def _parse_string_config_values(

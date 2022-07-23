@@ -18,7 +18,7 @@ from staze.tools.log import log
 
 from staze.core.service.service import Service
 from staze.tools.hints import CLIModeEnumUnion
-from staze.core.view.view_ie import ViewIe
+from staze.core.view.view_ie import ViewModel
 from staze.core.cli.cli_run_enum import CLIRunEnum
 from .http_method_enum import HTTPMethodEnum
 from .turbo_action_enum import TurboActionEnum
@@ -193,7 +193,7 @@ class Staze(Service):
     def test_request_context(self) -> RequestContext:
         return self.native_app.test_request_context()
 
-    def register_view(self, view_ie: ViewIe) -> None:
+    def register_view(self, view_ie: ViewModel) -> None:
         """Register given view cell for the app."""
         # Check if view has kwargs to avoid sending empty dict.
         # Use cell's name as view's endpoint.

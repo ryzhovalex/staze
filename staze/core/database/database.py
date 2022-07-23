@@ -9,7 +9,7 @@ from staze.tools.log import log
 from flask import Flask
 import flask_migrate
 from flask_sqlalchemy import SQLAlchemy
-from flask_sqlalchemy import Model as BaseModel
+from flask_sqlalchemy import Model as BaseMapper
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declared_attr
 
@@ -36,7 +36,7 @@ def migration_implemented(func: Callable):
     return inner
 
 
-class Mapper(BaseModel):
+class Mapper(BaseMapper):
     """Base orm model responsible of holding model's data and at least
     it's basic CRUD operations.
 
@@ -157,20 +157,20 @@ class orm:
     # https://github.com/microsoft/pylance-release/issues/187
     native_database = SQLAlchemy(model_class=Mapper)
     Model: Any = native_database.Model 
-    column = native_database.Column  # type: ignore 
-    integer = native_database.Integer  # type: ignore
-    string = native_database.String  # type: ignore
-    text = native_database.Text  # type: ignore
-    float = native_database.Float  # type: ignore
-    boolean = native_database.Boolean  # type: ignore
-    foreign_key = native_database.ForeignKey  # type: ignore
-    table = native_database.Table  # type: ignore
-    check_constraint = native_database.CheckConstraint  # type: ignore
-    relationship = native_database.relationship  # type: ignore
-    backref = native_database.backref  # type: ignore
-    pickle = native_database.PickleType  # type: ignore
-    binary = native_database.LargeBinary  # type: ignore
-    datetime = native_database.DateTime  # type: ignore
+    column = native_database.Column
+    integer = native_database.Integer
+    string = native_database.String
+    text = native_database.Text
+    float = native_database.Float
+    boolean = native_database.Boolean
+    foreign_key = native_database.ForeignKey
+    table = native_database.Table
+    check_constraint = native_database.CheckConstraint
+    relationship = native_database.relationship
+    backref = native_database.backref
+    pickle = native_database.PickleType
+    binary = native_database.LargeBinary
+    datetime = native_database.DateTime
 
 
 class Database(Service):
@@ -180,7 +180,7 @@ class Database(Service):
         self.DEFAULT_URI = f"sqlite:///{self.config['root_path']}/sqlite3.database"
 
         self.native_database = orm.native_database
-        # For now service config propagated to Database domain.
+        # For now service config propagated to Database domain
         self._assign_uri_from_config(config)
 
     def _assign_uri_from_config(self, config: dict) -> None:
@@ -190,34 +190,44 @@ class Database(Service):
             log.info(f"URI for database is not specified, using default")
             raw_uri = self.DEFAULT_URI
         else:
-            # Case 1: SQLite Database.
-            # Developer can give relative path to the Database (it will be absolutized at ConfigIe.parse()),
-            # by setting sqlite Database extension to `.database`, e.g. `./instance/sqlite3.database`,
-            # or by setting full absolute path with protocol, e.g. `sqlite:////home/user/project/instance/sqlite3.database`.
+            # Case 1: SQLite Database
+            # Developer can give relative path to the Database
+            # (it will be absolutized at Config.parse()),
+            # by setting sqlite Database extension to `.database`, e.g.:
+            #   `./instance/sqlite3.database`
+            # or by setting full absolute path with protocol, e.g.:
+            #   `sqlite:////home/user/project/instance/sqlite3.database`
             if raw_uri.rfind(".database") != -1 or "sqlite:///" in raw_uri:
                 if "sqlite:///" not in raw_uri: 
-                    # Set absolute path to database.
+                    # Set absolute path to database
                     # Ref: https://stackoverflow.com/a/44687471/14748231
                     self.uri = "sqlite:///" + raw_uri
                 else:
                     self.uri = raw_uri
                 self.type_enum = DatabaseTypeEnum.SQLITE
-            # Case 2: PostgreSQL Database.
+            # Case 2: PostgreSQL Database
             elif re.match(r"postgresql(\+\w+)?://", raw_uri):
-                # No need to calculate path since psql uri should be given in full form.
+                # No need to calculate path since psql uri should be given in
+                # full form
                 self.uri = raw_uri
                 self.type_enum = DatabaseTypeEnum.PSQL
             else:
-                raise ValueError(format_message("Unrecognized or yet unsupported type of Database uri: {}", raw_uri))
+                raise ValueError(
+                    "Unrecognized or yet unsupported type of Database uri:"
+                    f" {raw_uri}")
             
-            # WARNING: Never print full Database uri to config, since it may contain user's password (as in case of
-            # psql)
+            # WARNING:
+            #   Never print full Database uri to config, since it may
+            #   contain user's password (as in case of psql)
             log.info(f"Set database type: {self.type_enum.value}")
 
     @migration_implemented
-    def init_migration(self, directory: str = "migrations", multidatabase: bool = False) -> None:
+    def init_migration(
+            self,
+            directory: str = "migrations",
+            multidatabase: bool = False) -> None:
         """Initializes migration support for the application."""
-        flask_migrate.init(directory=directory, multidatabase=multidatabase)
+        flask_migrate.init(directory=directory, multidb=multidatabase)
 
     @migration_implemented
     def migrate_migration(

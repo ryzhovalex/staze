@@ -19,14 +19,14 @@ from staze.tools.hints import CLIModeEnumUnion
 from .cli_run_enum import CLIRunEnum
 from .cli_database_enum import CLIDatabaseEnum
 from .cli_helper_enum import CLIHelperEnum
-from staze.core.cli.cli_input_ie import CLIInputIe
+from staze.core.cli.cli_input_ie import CLIInputModel
 
 
 def main() -> None:
     # Environs should be loaded from app's root directory
     load_dotenv(os.path.join(os.getcwd(), '.env'))
 
-    args: CLIInputIe = _parse_input()
+    args: CLIInputModel = _parse_input()
 
     match args.mode_enum:
         case CLIHelperEnum.VERSION:
@@ -43,12 +43,12 @@ def main() -> None:
             assembler.run()
 
 
-def _parse_input() -> CLIInputIe:
+def _parse_input() -> CLIInputModel:
     args: list[str] = sys.argv
     check_other_args: bool = True
 
-    ie_kwargs: dict = {}
-    ie_kwargs['mode_args'] = []
+   model_kwargs: dict = {}
+   model_kwargs['mode_args'] = []
 
 
     match args[1]:
@@ -58,7 +58,7 @@ def _parse_input() -> CLIInputIe:
                     'Mode `version` shouldn\'t be'
                     ' followed by any other arguments')
 
-            ie_kwargs['mode_enum'] = CLIHelperEnum.VERSION
+           model_kwargs['mode_enum'] = CLIHelperEnum.VERSION
             check_other_args = False 
         case _:
             try:
@@ -70,7 +70,7 @@ def _parse_input() -> CLIInputIe:
                     f'Unrecognized mode: {args[1]}')
             else:
                 # Create according enum with mode value
-                ie_kwargs['mode_enum'] = mode_enum_class(args[1])
+               model_kwargs['mode_enum'] = mode_enum_class(args[1])
 
     if check_other_args:
         # Traverse other args
@@ -79,11 +79,11 @@ def _parse_input() -> CLIInputIe:
 
             match arg:
                 case '-h':
-                    if not isinstance(ie_kwargs['mode_enum'], CLIRunEnum):
+                    if not isinstancemodel_kwargs['mode_enum'], CLIRunEnum):
                         raise CLIError(
                             'Flag -h applicable only to Run modes:'
                             f' {get_enum_values(CLIRunEnum)}')
-                    elif '-h' in ie_kwargs:
+                    elif '-h' inmodel_kwargs:
                         raise CLIError('Flag -h has been defined twice')
                     else:
                         try:
@@ -96,13 +96,13 @@ def _parse_input() -> CLIInputIe:
                             validation.validate_re(
                                 host,
                                 r'^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}$')
-                            ie_kwargs['host'] = host
+                           model_kwargs['host'] = host
                 case '-p':
-                    if not isinstance(ie_kwargs['mode_enum'], CLIRunEnum):
+                    if not isinstancemodel_kwargs['mode_enum'], CLIRunEnum):
                         raise CLIError(
                             'Flag -p applicable only to Run modes:'
                             f' {get_enum_values(CLIRunEnum)}')
-                    elif '-p' in ie_kwargs:
+                    elif '-p' inmodel_kwargs:
                         raise CLIError('Flag -p has been defined twice')
                     else:
                         try:
@@ -114,14 +114,14 @@ def _parse_input() -> CLIInputIe:
                             validation.validate_re(
                                 port,
                                 r'^\d+$')
-                            ie_kwargs['port'] = port
+                           model_kwargs['port'] = port
                 case _:
                     # In all other cases, write results to mode_args as it is,
                     # this is required, e.g. in pytest as well as in all other
                     # plugins and custom commands
-                    ie_kwargs['mode_args'].append(arg)
+                   model_kwargs['mode_args'].append(arg)
 
-    return CLIInputIe(**ie_kwargs)
+    return CLIInputModel(*model_kwargs)
 
 
 if __name__ == "__main__":

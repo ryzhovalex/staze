@@ -4,12 +4,12 @@ from staze.tools.hints import CLIModeEnumUnion
 from staze.core.app.app import Staze
 from staze.core.assembler.assembler import Assembler
 from staze.core.sock.default_sock_error_handler import default_sock_error_handler
-from staze.core.sock.sock_ie import SockIe
+from staze.core.sock.sock_ie import SockModel
 
-from staze.core.service.service_ie import ServiceIe
-from staze.core.view.view_ie import ViewIe
-from staze.core.emt.emt_ie import EmtIe
-from staze.core.error.error_ie import ErrorIe
+from staze.core.service.service_ie import ServiceModel
+from staze.core.view.view_ie import ViewModel
+from staze.core.emt.emt_ie import EmtModel
+from staze.core.error.error_ie import ErrorModel
 
 
 class Build:
@@ -22,13 +22,13 @@ class Build:
         self,
         version: str = "",
         config_dir: str = "./src/configs",
-        service_ies: list[ServiceIe] = [],
-        view_ies: list[ViewIe] = [],
-        emt_ies: list[EmtIe] = [],
-        error_ies: list[ErrorIe] = [],
+        service_ies: list[ServiceModel] = [],
+        view_ies: list[ViewModel] = [],
+        emt_ies: list[EmtModel] = [],
+        error_ies: list[ErrorModel] = [],
         shell_processors: list[Callable] = [],
         cli_cmds: list[Callable] = [],
-        sock_ies: list[SockIe] = [],
+        sock_ies: list[SockModel] = [],
         default_sock_error_handler: Callable = default_sock_error_handler,
         ctx_processor_func: Callable | None = None,
         each_request_func: Callable | None = None,

@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
-from staze.core.ie.ie import Ie
+from staze. core.model.model import Model
 
 from .emt import Emt
 
 
-@dataclass
-class EmtIe(Ie):
+ 
+class EmtModel(Model):
     emt_class: type[Emt]

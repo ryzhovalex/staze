@@ -4,13 +4,13 @@ from typing import Any, ClassVar
 from schema import Schema
 from staze.core.database.database import orm
 from staze.tools.log import log
-from staze.core.cell.cell_error import CellError
+from staze.core.db.cell_error import CellError
 from warepy import snakefy
-from staze.core.ie.ie import Ie
+from staze. core.model.model import Model
 
 
-@dataclass
-class Cell(Ie):
+ 
+class Cell(Model):
     Model: ClassVar = None
     id: int
     type: str
@@ -41,12 +41,12 @@ class Cell(Ie):
         except KeyError:
             raise CellError(
                 f'Cannot find cell with requested model type: {model_type}\n'
-                'Maybe you forgot to add `Model=...` to Ie\'s definition?')
+                'Maybe you forgot to add `Model=...` to Model\'s definition?')
         else:
             return cell_type.gen_instance(instance)
 
     @classmethod
-    def gen_instance(cls) -> 'Ie':
+    def gen_instance(cls) -> 'Model':
         raise NotImplementedError('Should be re-implemented in child class')
         
     @classmethod

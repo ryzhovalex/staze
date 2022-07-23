@@ -1,3 +1,5 @@
+import re
+
 from flask.views import MethodView
 from warepy import Singleton, format_message
 from staze.tools.log import log
@@ -16,23 +18,38 @@ class View(MethodView):
     """
     __metaclass__ = makecls()
 
+    # Route will be the same for all methods
+    route: str
+    endpoint: str | None = None
+
     # List of decorators to apply to all view's methods.
     # decorators = [log.catch]  
     # To extend decorators in child class, use `decorators = View.decorators + [your_shiny_decorator]` 
     # in your class variable definition.
 
-    def get(self):
-        error_message = format_message("Method GET is not implemented at view: {}", self.__class__.__name__)
-        raise NotImplementedError(error_message)
-    
-    def post(self):
-        error_message = format_message("Method POST is not implemented at view: {}", self.__class__.__name__)
-        raise NotImplementedError(error_message)
+    def get_transformed_route(self) -> str:
+        """Return route transformed to endpoint format.
 
-    def put(self):
-        error_message = format_message("Method PUT is not implemented at view: {}", self.__class__.__name__)
-        raise NotImplementedError(error_message)
+        This method used by app to get endpoint if it's not given at assembling
+        stage.
+        
+        Example:
+        ```python
+        v = ViewModel(view_class=MyViewClass, route='/my/perfect/route')
+        v.get_transformed_route()
+        # 'my.perfect.route'
+        ```
+        """
+        res_route: str = ''
+        route_pieces: list[str] = self.route.split('/')
 
-    def delete(self):
-        error_message = format_message("Method DELETE is not implemented at view: {}", self.__class__.__name__)
-        raise NotImplementedError(error_message)
+        for piece in route_pieces:
+            if re.match(r'\<.+\>', piece):
+                # Remove arrows around route, so /user/<id> transforms to
+                # user.id
+                res_route += piece[1:len(piece)-2]
+            else:
+                res_route += piece
+
+        return res_route
+

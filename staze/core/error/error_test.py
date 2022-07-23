@@ -11,7 +11,7 @@ class ChildError(Error):
     DEFAULT_STATUS_CODE = 405
 
 
-@dataclass
+ 
 class ErrorMock(Mock):
     message: str
     status_code: int

@@ -2,12 +2,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from dataclasses import dataclass
 
-from staze.core.service.service_ie import ServiceIe
+from staze.core.service.service_ie import ServiceModel
 
 if TYPE_CHECKING:
     from staze.core.sock.socket import Socket
 
 
-@dataclass
-class SocketServiceIe(ServiceIe):
+ 
+class SocketServiceModel(ServiceModel):
     service_class: type[Socket]

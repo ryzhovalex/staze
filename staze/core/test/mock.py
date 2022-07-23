@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
-from staze.core.ie.ie import Ie
+from staze. core.model.model import Model
 
 
-@dataclass
-class Mock(Ie):
+ 
+class Mock(Model):
     """Interface using for mocking test data."""
     pass
