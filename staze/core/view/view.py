@@ -19,15 +19,19 @@ class View(MethodView):
     __metaclass__ = makecls()
 
     # Route will be the same for all methods
-    route: str
-    endpoint: str | None = None
+    ROUTE: str
+    # View methods. Note that this list completely overrides HttpMethodEnum
+    # for this view
+    METHODS: list[str]
+    ENDPOINT: str | None = None
 
     # List of decorators to apply to all view's methods.
     # decorators = [log.catch]  
     # To extend decorators in child class, use `decorators = View.decorators + [your_shiny_decorator]` 
     # in your class variable definition.
 
-    def get_transformed_route(self) -> str:
+    @classmethod
+    def get_transformed_route(cls) -> str:
         """Return route transformed to endpoint format.
 
         This method used by app to get endpoint if it's not given at assembling
@@ -41,7 +45,7 @@ class View(MethodView):
         ```
         """
         res_route: str = ''
-        route_pieces: list[str] = self.route.split('/')
+        route_pieces: list[str] = cls.ROUTE.split('/')
 
         for piece in route_pieces:
             if re.match(r'\<.+\>', piece):

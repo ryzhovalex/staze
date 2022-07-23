@@ -17,14 +17,14 @@ from warepy import get_enum_values
 from staze.tools.log import log
 
 from staze.core.service.service import Service
+from staze.core.view.view import View
 from staze.tools.hints import CLIModeEnumUnion
-from staze.core.view.view_ie import ViewModel
 from staze.core.cli.cli_run_enum import CLIRunEnum
 from .http_method_enum import HTTPMethodEnum
 from .turbo_action_enum import TurboActionEnum
 
 
-class Staze(Service):
+class App(Service):
     """Core app's class.
     """
     def __init__(
@@ -193,19 +193,30 @@ class Staze(Service):
     def test_request_context(self) -> RequestContext:
         return self.native_app.test_request_context()
 
-    def register_view(self, view_ie: ViewModel) -> None:
-        """Register given view cell for the app."""
-        # Check if view has kwargs to avoid sending empty dict.
-        # Use cell's name as view's endpoint.
-        if view_ie.endpoint:
-            endpoint = view_ie.endpoint
-        else:
-            endpoint = view_ie.get_transformed_route()
+    def register_view(self, view_class: type[View]) -> None:
+        """Register given view class for the app."""
+        endpoint: str
+        methods: list[str]
 
-        view = view_ie.view_class.as_view(endpoint)
+        if view_class.ENDPOINT:
+            endpoint = view_class.ENDPOINT
+        else:
+            endpoint = view_class.get_transformed_route()
+
+        if view_class.METHODS:
+            methods = view_class.METHODS
+        else:
+            methods = get_enum_values(HTTPMethodEnum)
+
+        validation.validate(endpoint, str)
+
+        view = view_class.as_view(endpoint)
+
+        assert isinstance(view, View)
+
         self.native_app.add_url_rule(
-            view_ie.route, view_func=view,
-            methods=get_enum_values(HTTPMethodEnum))
+            view_class.ROUTE, view_func=view,
+            methods=methods)
 
     def register_error(
             self,
