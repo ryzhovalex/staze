@@ -1,0 +1,14 @@
+flask
+warepy==0.7.1
+requests
+turbo-flask
+flask-migrate
+pytest
+flask-cors
+flask-session
+redis
+click
+python-dotenv
+flask-socketio
+loguru
+schema

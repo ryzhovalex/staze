@@ -1,0 +1,4 @@
+include MANIFEST.in
+graft staze
+global-exclude __pycache__
+prune staze/tests
