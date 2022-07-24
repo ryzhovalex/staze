@@ -9,16 +9,16 @@ from turbo_flask import Turbo
 from flask_session import Session
 from flask.testing import FlaskClient
 from staze.core import validation
-from staze.tools.log import log
+from staze.core.log import log
 from flask import Flask
 from flask import cli as flask_cli
 from flask.ctx import AppContext, RequestContext
 from warepy import get_enum_values
-from staze.tools.log import log
+from staze.core.log import log
 
 from staze.core.service.service import Service
 from staze.core.view.view import View
-from staze.tools.hints import CLIModeEnumUnion
+from staze.core.hints import CLIModeEnumUnion
 from staze.core.cli.cli_run_enum import CLIRunEnum
 from .http_method_enum import HTTPMethodEnum
 from .turbo_action_enum import TurboActionEnum
@@ -324,7 +324,8 @@ class App(Service):
         code.interact(banner=banner, local=ctx)
 
     def _init_app_daemons(
-            self, ctx_processor_func: Callable | None,
+            self,
+            ctx_processor_func: Callable | None,
             each_request_func: Callable | None,
             first_request_func: Callable | None) -> None:
         """Binds various background processes to the app."""

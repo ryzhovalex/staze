@@ -6,7 +6,7 @@ from functools import wraps
 from typing import Callable
 
 from warepy import format_message
-from staze.tools.log import log
+from staze.core.log import log
 from flask import session, redirect, url_for
 
 

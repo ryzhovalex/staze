@@ -9,13 +9,13 @@ from warepy import (
     get_enum_values, get_union_enum_values
 )
 from staze.core.cli.cli_error import CLIError
-from staze.tools.log import log
+from staze.core.log import log
 from dotenv import load_dotenv
 
 from staze import __version__ as staze_version
 from staze.core.assembler.assembler import Assembler
 from staze.core import validation, parsing
-from staze.tools.hints import CLIModeEnumUnion
+from staze.core.hints import CLIModeEnumUnion
 from .cli_run_enum import CLIRunEnum
 from .cli_database_enum import CLIDatabaseEnum
 from .cli_helper_enum import CLIHelperEnum

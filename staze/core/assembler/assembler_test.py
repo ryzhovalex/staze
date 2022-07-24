@@ -4,7 +4,7 @@ from staze.core.assembler.build import Build
 from staze.core.cli.cli_run_enum import CLIRunEnum
 from staze.core.app.app import App
 from staze.core.database.database import Database
-from staze.tools.log import log
+from staze.core.log import log
 from staze.tests.blog.app.user.user_service import UserService
 
 

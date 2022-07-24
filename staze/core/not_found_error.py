@@ -1,4 +1,4 @@
-from ..core.error.error import Error
+from .error.error import Error
 
 
 class NotFoundError(Error):

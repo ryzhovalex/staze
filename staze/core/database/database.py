@@ -6,7 +6,7 @@ from typing import Callable, Any, TypeVar
 from warepy import format_message, snakefy
 from staze.core.database.mapper_not_found_error import MapperNotFoundError
 from staze.core.model.model import Model
-from staze.tools.log import log
+from staze.core.log import log
 from flask import Flask
 import flask_migrate
 from flask_sqlalchemy import SQLAlchemy

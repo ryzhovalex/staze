@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from staze. core.model.model import Model
-from staze.tools.hints import CLIModeEnumUnion
+from staze.core.hints import CLIModeEnumUnion
 
 
  

@@ -7,7 +7,7 @@ from staze.core.app.app import App
 from staze.core import validation, parsing
 from staze.core.database.database import Database
 from staze.core.socket.socket import Socket
-from staze.tools.get_root_dir import get_root_dir
+from staze.core.get_root_dir import get_root_dir
 
 
 class Test:

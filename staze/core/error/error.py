@@ -1,3 +1,6 @@
+from typing import Callable
+
+
 class Error(Exception):
     """Main error class to be inherited in all app's custom errors.
     
@@ -19,7 +22,8 @@ class Error(Exception):
     """
     DEFAULT_MESSAGE = ''
     DEFAULT_STATUS_CODE = 400
-    handler_function: Callable
+    HANDLER_FUNCTION: Callable | None = None
+    SHOULD_BE_LOGGED: bool = True
 
     def __init__(
             self,

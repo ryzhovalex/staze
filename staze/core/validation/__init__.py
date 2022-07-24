@@ -1,7 +1,7 @@
 import re
 from typing import Any
 from enum import EnumMeta
-from staze.tools.log import log
+from staze.core.log import log
 from staze.core.validation.validation_error import (
     ValidationError, ReValidationError)
 

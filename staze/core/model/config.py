@@ -10,7 +10,7 @@ from warepy import join_paths, load_yaml, get_enum_values
 from staze.core.app.app_mode_enum import AppModeEnum
 from ..assembler.config_extension_enum import ConfigExtensionEnum
 from staze.core.model.model import Model
-from staze.tools.log import log
+from staze.core.log import log
 
 
 class Config(Model):

@@ -13,20 +13,20 @@ from staze.core.assembler.assembler_error import AssemblerError
 from staze.core.cli.cli_database_enum import CLIDatabaseEnum
 from staze.core.cli.cli_error import CLIError
 from staze.core.cli.cli_helper_enum import CLIHelperEnum
+from staze.core.error_handler import ErrorHandler
 
 from staze.core.socket.socket import Socket
 from staze.core.service.service import Service
-from staze.tools.hints import CLIModeEnumUnion
-from staze.tools.log import log
+from staze.core.hints import CLIModeEnumUnion
+from staze.core.log import log
 from staze.core.app.app_mode_enum import AppModeEnum
 from staze.core.cli.cli_run_enum import CLIRunEnum
 from staze.core.error.error import Error
-from staze.tools.error_handlers import handle_wildcard_builtin_error, handle_wildcard_error
 from staze.core.model.config import Config
 
 from staze.core.database.database import Database
 from staze.core.app.app import App
-from staze.tools.hints import CLIModeEnumUnion
+from staze.core.hints import CLIModeEnumUnion
 from .config_extension_enum import ConfigExtensionEnum
 
 if TYPE_CHECKING:
@@ -72,7 +72,6 @@ class Assembler(Singleton):
         # `get()` method called from this dictionary
         self.extra_configs_by_name = {}
         self.root_dir = root_dir
-        self.default_wildcard_error_handler_func = handle_wildcard_error
         self.socket_enabled: bool = False
 
         self.mode_enum: CLIModeEnumUnion = mode_enum
@@ -87,17 +86,21 @@ class Assembler(Singleton):
         # Use build in further assignment
         self.service_classes = self.build.service_classes
         self.view_classes = self.build.view_classes
-        self.error_classes = self.build.error_classes
         self.shell_processors = self.build.shell_processors
-        self.cli_cmds = self.build.cli_cmds
         self.ctx_processor_func = self.build.ctx_processor_func
         self.each_request_func = self.build.each_request_func
         self.first_request_func = self.build.first_request_func
         self.sock_classes = self.build.sock_classes
-        self.default_sock_error_handler = self.build.default_sock_error_handler
+
+        self.default_error_handler = self.build.default_error_handler
+        self.default_builtin_error_hanlder = \
+            self.build.default_builtin_error_handler
+
         self._build_configs(self.build.config_dir)
-        # Traverse given configs and assign enabled builtin cells
+        
         self._build_builtin_services(mode_enum, host, port)
+        self._build_builtin_helpers()
+
         # Namespace to hold all initialized services. Should be used only for
         # testing purposes, when direct import of services are unavailable
         self._custom_services: dict[str, Any] = {}
@@ -111,7 +114,6 @@ class Assembler(Singleton):
         self._build_log()
         self._build_custom_services()
         self._build_custom_views()
-        self._build_custom_errors()
         self._build_custom_shell_processors()
         self._build_custom_cli_cmds()
         self._build_custom_socks()
@@ -219,6 +221,9 @@ class Assembler(Singleton):
             
             if layers_to_log:
                 log.info(f'Enabled layers: {", ".join(layers_to_log)}')
+
+    def _build_builtin_helpers(self) -> None:
+        self._build_error_handler()
 
     def run(self):
         if isinstance(self.mode_enum, CLIRunEnum):
@@ -403,29 +408,15 @@ class Assembler(Singleton):
             self.app.register_shell_processor(*self.shell_processors)
 
     def _build_custom_cli_cmds(self) -> None:
-        if self.cli_cmds:
-            self.app.register_cli_cmd(*self.cli_cmds)
+        # TEMP:
+        #   In development
+        #
+        # if self.cli_cmds:
+        #     self.app.register_cli_cmd(*self.cli_cmds)
+        pass
 
-    def _build_custom_errors(self) -> None:
-        # TODO: Test case when user same error class registered twice (e.g. in
-        # duplicate cells)
-        wildcard_specified: bool = False
-
-        for error_class in self.error_classes:
-            if type(error_class.error_class) is Error:
-                log.info('Wildcard Error handler specified')
-                wildcard_specified = True
-            self.app.register_error(
-                error_class.error_class, error_class.handler_function)
-
-        # If wildcard handler is not specified, apply the default one
-        if not wildcard_specified:
-            self.app.register_error(
-                Error, self.default_wildcard_error_handler_func)
-
-        # Register wildcard builin error handler if this function is enabled
-        # in config. Do not allow user to specify own builtin error handlers,
-        # at least for now (maybe implement this in future)
-        if self.app.wildcard_builtin_error_handler_enabled:
-            self.app.register_error(
-                Exception, handle_wildcard_builtin_error)
+    def _build_error_handler(self) -> None:
+        ErrorHandler(
+            app=self.app,
+            default_error_handler=self.default_error_handler,
+            default_builtin_error_handler=self.default_builtin_error_hanlder)

@@ -6,7 +6,7 @@ from staze.core.service.service_ie import ServiceModel
 
 if TYPE_CHECKING:
     from staze.core.app.app import Staze
-    from staze.tools.hints import CLIModeEnumUnion
+    from staze.core.hints import CLIModeEnumUnion
 
  
 class StazeServiceModel(ServiceModel):
