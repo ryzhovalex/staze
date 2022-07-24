@@ -1,5 +1,3 @@
-![staze](staze/assets/logo.png)
-
 Staze
 ===
 
