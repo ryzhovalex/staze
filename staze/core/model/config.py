@@ -7,7 +7,7 @@ from typing import Any, TypeVar, Sequence
 
 from warepy import join_paths, load_yaml, get_enum_values
 
-from staze.core.app.app_mode_enum import AppModeEnum
+from staze.core.app.app_mode_enum import RunAppModeEnum
 from ..assembler.config_extension_enum import ConfigExtensionEnum
 from staze.core.model.model import Model
 from staze.core.log import log
@@ -17,7 +17,7 @@ class Config(Model):
     """Config config which can be used to load configs to appropriate instance's
     configuration by name."""
     name: str
-    source_by_app_mode: dict[AppModeEnum, str]
+    source_by_app_mode: dict[RunAppModeEnum, str]
 
     @staticmethod
     def find_by_name(name: str, configs: list['Config']) -> 'Config':
@@ -36,7 +36,7 @@ class Config(Model):
             "No config found with given name: {}", name)
 
     def parse(
-            self, app_mode_enum: AppModeEnum, root_dir: str,
+            self, app_mode_enum: RunAppModeEnum, root_dir: str,
             update_with: dict[str, Any] | None = None,
             convert_keys_to_lower: bool = True) -> dict[str, Any]:
         """Parse config config and return configuration dictionary.
@@ -59,7 +59,7 @@ class Config(Model):
         """
         res_config: dict[str, Any] = {}
 
-        config_by_mode: dict[AppModeEnum, dict] = self._load_config_by_mode()
+        config_by_mode: dict[RunAppModeEnum, dict] = self._load_config_by_mode()
         res_config = self._update_config_for_mode(config_by_mode, app_mode_enum)
 
         if res_config:
@@ -82,8 +82,8 @@ class Config(Model):
 
     def _update_config_for_mode(
             self,
-            config_by_mode: dict[AppModeEnum, dict],
-            app_mode_enum: AppModeEnum) -> dict:
+            config_by_mode: dict[RunAppModeEnum, dict],
+            app_mode_enum: RunAppModeEnum) -> dict:
         """Take config maps for each mode and return result config updated for
         current mode.
         
@@ -91,24 +91,24 @@ class Config(Model):
         by DEV config and then updated by TEST config (so test keys will
         take priority).
         """ 
-        prod_config = copy(config_by_mode[AppModeEnum.PROD])
+        prod_config = copy(config_by_mode[RunAppModeEnum.PROD])
 
-        if app_mode_enum is AppModeEnum.TEST:
-            dev_config = copy(config_by_mode[AppModeEnum.DEV])
-            test_config = copy(config_by_mode[AppModeEnum.TEST])
+        if app_mode_enum is RunAppModeEnum.TEST:
+            dev_config = copy(config_by_mode[RunAppModeEnum.DEV])
+            test_config = copy(config_by_mode[RunAppModeEnum.TEST])
             dev_config.update(test_config)
             prod_config.update(dev_config)
-        elif app_mode_enum is AppModeEnum.DEV:
-            dev_config = copy(config_by_mode[AppModeEnum.DEV])
+        elif app_mode_enum is RunAppModeEnum.DEV:
+            dev_config = copy(config_by_mode[RunAppModeEnum.DEV])
             prod_config.update(dev_config)
         else:
             # Prod mode, do nothing extra
             pass
         return prod_config
     
-    def _load_config_by_mode(self) -> dict[AppModeEnum, dict]:
-        config_by_mode: dict[AppModeEnum, dict] = {}
-        for app_mode_enum in AppModeEnum:
+    def _load_config_by_mode(self) -> dict[RunAppModeEnum, dict]:
+        config_by_mode: dict[RunAppModeEnum, dict] = {}
+        for app_mode_enum in RunAppModeEnum:
             try:
                 source = self.source_by_app_mode[app_mode_enum]
             except KeyError:
@@ -173,7 +173,7 @@ class Config(Model):
 
     @staticmethod
     def find_config_files(
-            config_path: str) -> dict[str, dict[AppModeEnum, str]]:
+            config_path: str) -> dict[str, dict[RunAppModeEnum, str]]:
         """Accept path to config dir and return dict describing all paths to
         configs for all app modes per service name.
         
@@ -209,7 +209,7 @@ class Config(Model):
                         if config_name not in source_map_by_name:
                             source_map_by_name[config_name] = dict()
                         source_map_by_name[config_name][
-                            AppModeEnum.PROD] = file_path
+                            RunAppModeEnum.PROD] = file_path
                     else:
                         # Skip files with unsupported extension.
                         continue
@@ -217,7 +217,7 @@ class Config(Model):
                     # Config name shouldn't contain dots and thus we can grab
                     # it right here.
                     config_name = parts[0]
-                    if parts[1] in get_enum_values(AppModeEnum) \
+                    if parts[1] in get_enum_values(RunAppModeEnum) \
                             and parts[2] in get_enum_values(
                                 ConfigExtensionEnum):
                         # File has both normal extension and defined
@@ -225,7 +225,7 @@ class Config(Model):
                         if config_name not in source_map_by_name:
                             source_map_by_name[config_name] = dict()
                         source_map_by_name[config_name][
-                            AppModeEnum(parts[1])] = file_path
+                            RunAppModeEnum(parts[1])] = file_path
                     else:
                         # Unrecognized app mode or extension,
                         # maybe raise warning?

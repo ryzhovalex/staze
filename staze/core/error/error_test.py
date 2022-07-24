@@ -11,7 +11,6 @@ class ChildError(Error):
     DEFAULT_STATUS_CODE = 405
 
 
- 
 class ErrorMock(Mock):
     message: str
     status_code: int
@@ -19,7 +18,7 @@ class ErrorMock(Mock):
 
 @fixture
 def error_mock() -> ErrorMock:
-    return ErrorMock('Something bad happened!', 400)
+    return ErrorMock(message='Something bad happened!', status_code=400)
 
 
 @fixture

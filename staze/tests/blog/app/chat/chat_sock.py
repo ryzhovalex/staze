@@ -2,6 +2,8 @@ from staze import Sock, log
 
 
 class ChatSock(Sock):
+    NAMESPACE: str = '/chat' 
+
     def on_connect(self):
         pass
     

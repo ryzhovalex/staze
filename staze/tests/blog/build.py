@@ -7,7 +7,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from staze import (
-    Build, ServiceModel, ViewModel, SockModel, log)
+    Build, Service, View, Sock)
 
 from blog.app.user.user_service import UserService
 from blog.tools.shell import import_main, import_std
@@ -16,22 +16,22 @@ from blog.app.chat.chat_service import ChatService
 from blog.app.chat.chat_sock import ChatSock
 
 
-service_ies: list[ServiceModel] = [
-    ServiceModel('user', UserService),
-    ServiceModel('chat', service_class=ChatService)
+service_classes: list[type[Service]] = [
+    ChatService,
+    UserService
 ]
 
-sock_ies: list[SockModel] = [
-    SockModel('/chat', ChatSock)
+sock_classes: list[type[Sock]] = [
+    ChatSock
 ]
 
-view_ies: list[ViewModel] = [
-    ViewModel('/user/<id>', UserView)
+view_classes: list[type[View]] = [
+    UserView
 ]
 
 build = Build(
     version=__version__,
-    service_ies=service_ies,
-    view_ies=view_ies,
+    service_classes=service_classes,
+    view_classes=view_classes,
     shell_processors=[import_std, import_main],
-    sock_ies=sock_ies)
+    sock_classes=sock_classes)

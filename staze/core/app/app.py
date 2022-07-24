@@ -20,7 +20,6 @@ from staze.core.log import log
 
 from staze.core.service.service import Service
 from staze.core.view.view import View
-from .http_method_enum import HTTPMethodEnum
 from .turbo_action_enum import TurboActionEnum
 
 
@@ -49,17 +48,9 @@ class App(Service):
         self._assign_defaults_to_config(self.config)
         self._validate_config(self.config)
 
-        # Flag for wildcard builtin error handler. Read by assembler in order
-        # to register handler on build errors stage.
-        self.wildcard_builtin_error_handler_enabled: bool = self.config.get(
-            'wildcard_builtin_error_handler_enabled', True)
-        validation.validate(self.wildcard_builtin_error_handler_enabled, bool)
-        if self.wildcard_builtin_error_handler_enabled:
-            log.info('Wildcard builtin error handler enabled')
-
         super().__init__(self.config)
         self._mode_enum: AppModeEnumUnion = mode_enum
-        self._root_dir: str = self.config['root_dir']
+        self._root_dir: str = self.config['ROOT_DIR']
 
         self.host = host
         self.port = port
@@ -214,19 +205,14 @@ class App(Service):
         else:
             endpoint = view_class.get_transformed_route()
 
-        if view_class.METHODS:
-            methods = view_class.METHODS
-        else:
-            methods = get_enum_values(HTTPMethodEnum)
+        methods = view_class.METHODS
 
         validation.validate(endpoint, str)
 
-        view = view_class.as_view(endpoint)
-
-        assert isinstance(view, View)
+        view_func = view_class.as_view(endpoint)
 
         self.native_app.add_url_rule(
-            view_class.ROUTE, view_func=view,
+            view_class.ROUTE, view_func=view_func,
             methods=methods)
 
     def register_error(

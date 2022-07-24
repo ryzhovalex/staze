@@ -1,6 +1,6 @@
 import os
 from typing import Callable
-from staze.core.hints import AppModeEnumUnion
+from staze.core.app.app_mode_enum import AppModeEnumUnion
 from staze.core.app.app import App
 from staze.core.assembler.assembler import Assembler
 from staze.core.socket.default_sock_error_handler import (

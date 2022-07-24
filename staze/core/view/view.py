@@ -22,7 +22,7 @@ class View(MethodView):
     ROUTE: str
     # View methods. Note that this list completely overrides HttpMethodEnum
     # for this view
-    METHODS: list[str]
+    METHODS: list[str] = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
     ENDPOINT: str | None = None
 
     # List of decorators to apply to all view's methods.

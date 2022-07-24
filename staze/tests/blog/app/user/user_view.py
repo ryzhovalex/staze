@@ -4,6 +4,8 @@ from .user import User
 
 
 class UserView(View):
+    ROUTE: str = '/users'
+
     def get(self, id: int):
         user: User = User.get_first(id=id)
         return {

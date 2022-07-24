@@ -1,6 +1,3 @@
-from ctypes import c_size_t
-from dataclasses import dataclass
-from typing import ClassVar
 from pytest import fixture
 from staze.core.model.model import Model
 from staze.core.test.mock import Mock
@@ -19,37 +16,36 @@ class CustomModelMock(Mock):
 
 
 @fixture
-def custom_ie_mock() -> CustomModelMock:
+def custom_model_mock() -> CustomModelMock:
     return CustomModelMock(name='Test', age=12, tags={'hero', 'reckless'})
 
 
 @fixture
-def custom_ie(custom_ie_mock: CustomModelMock) -> CustomModel:
+def custom_model(custom_model_mock: CustomModelMock) -> CustomModel:
     return CustomModel(
-        name=custom_ie_mock.name,
-        age=custom_ie_mock.age,
-        tags=custom_ie_mock.tags)
+        name=custom_model_mock.name,
+        age=custom_model_mock.age,
+        tags=custom_model_mock.tags)
 
 
 class TestModel():
-    def test_custom(self, custom_ie: CustomModel, custom_ie_mock: CustomModelMock):
+    def test_custom(
+            self, custom_model: CustomModel,
+            custom_model_mock: CustomModelMock):
         expected_json: dict = {
             'custom': {
-                'name': custom_ie_mock.name,
-                'age': custom_ie_mock.age,
-                'tags': custom_ie_mock.tags
+                'name': custom_model_mock.name,
+                'age': custom_model_mock.age,
+                'tags': custom_model_mock.tags
             }
         }
 
-        assert custom_ie.name == custom_ie_mock.name
-        assert custom_ie.age == custom_ie_mock.age
-        assert custom_ie.tags == custom_ie_mock.tags
+        assert custom_model.name == custom_model_mock.name
+        assert custom_model.age == custom_model_mock.age
+        assert custom_model.tags == custom_model_mock.tags
 
-        assert custom_ie.formatted_name == 'custom'
-        assert custom_ie.get_json() == expected_json
-        
-        # Validate self through class method
-        custom_ie.validate(custom_ie.get_json())
+        assert custom_model.formatted_name == 'custom'
+        assert custom_model.get_api_dict() == expected_json
 
-        json_custom_name: dict = custom_ie.get_json('testname')
+        json_custom_name: dict = custom_model.get_api_dict('testname')
         assert 'testname' in json_custom_name
