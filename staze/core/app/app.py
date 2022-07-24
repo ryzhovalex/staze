@@ -9,6 +9,8 @@ from turbo_flask import Turbo
 from flask_session import Session
 from flask.testing import FlaskClient
 from staze.core import validation
+from staze.core.app.app_mode_enum import (
+    RunAppModeEnum, HelperAppModeEnum, DatabaseAppModeEnum, AppModeEnumUnion)
 from staze.core.log import log
 from flask import Flask
 from flask import cli as flask_cli
@@ -18,8 +20,6 @@ from staze.core.log import log
 
 from staze.core.service.service import Service
 from staze.core.view.view import View
-from staze.core.hints import CLIModeEnumUnion
-from staze.core.cli.cli_run_enum import CLIRunEnum
 from .http_method_enum import HTTPMethodEnum
 from .turbo_action_enum import TurboActionEnum
 
@@ -30,7 +30,7 @@ class App(Service):
     def __init__(
             self, 
             config: dict,
-            mode_enum: CLIModeEnumUnion,
+            mode_enum: AppModeEnumUnion,
             host: str,
             port: int,
             ctx_processor_func: Callable | None = None,
@@ -39,10 +39,10 @@ class App(Service):
         # Templates by default searched within src/app, which allows to
         # integrate them directly to their logical component's folders
         self.DEFAULT_TEMPLATE_PATH = os.path.join(
-            config['root_path'], 'src/app')
+            config['root_dir'], 'src/app')
         self.DEFAULT_STATIC_PATH = os.path.join(
-            config['root_path'], 'src/assets')
-        self.DEFAULT_INSTANCE_PATH = os.path.join(config['root_path'], 'var')
+            config['root_dir'], 'src/assets')
+        self.DEFAULT_INSTANCE_PATH = os.path.join(config['root_dir'], 'var')
 
         # Convert all keys from given config to upper case
         self.config = self._make_upper_keys(config)
@@ -58,7 +58,9 @@ class App(Service):
             log.info('Wildcard builtin error handler enabled')
 
         super().__init__(self.config)
-        self.mode_enum = mode_enum
+        self._mode_enum: AppModeEnumUnion = mode_enum
+        self._root_dir: str = self.config['root_dir']
+
         self.host = host
         self.port = port
         self.native_app = self._spawn_native_app(self.config)
@@ -79,6 +81,15 @@ class App(Service):
             first_request_func=first_request_func
         )
 
+    @property
+    def mode(self) -> str:
+        return self._mode_enum.value
+
+    @property
+    def root_dir(self) -> str:
+        return self._root_dir
+
+    @property
     def test_client(self) -> FlaskClient:
         return self.native_app.test_client()
 
@@ -109,7 +120,7 @@ class App(Service):
 
     def _flush_redis_session_database(self) -> None:
         # Flush redis session database if mode is not `prod`. 
-        if self.mode_enum is not CLIRunEnum.PROD: 
+        if self._mode_enum is not RunAppModeEnum.PROD: 
             if self.native_app.config.get("SESSION_TYPE", None):
                 if self.native_app.config["SESSION_TYPE"] == "redis":
                     log.info(
@@ -132,7 +143,7 @@ class App(Service):
         # Enable testing if appropriate mode has been set. Do not rely on enum
         # if given config explicitly sets TESTING.
         if config.get("TESTING", None) is None:
-            if self.mode_enum is CLIRunEnum.TEST:
+            if self._mode_enum is RunAppModeEnum.TEST:
                 self.native_app.config["TESTING"] = True
             else:
                 self.native_app.config["TESTING"] = False
@@ -148,7 +159,7 @@ class App(Service):
         # Setting exactly through environs instead of config recommended by
         # Flask creators.
         # https://flask.palletsprojects.com/en/2.0.x/config/#:~:text=Using%20the%20environment,a%20previous%20value.
-        if self.mode_enum not in [CLIRunEnum.DEV, CLIRunEnum.TEST]:
+        if self._mode_enum not in [RunAppModeEnum.DEV, RunAppModeEnum.TEST]:
             os.environ["FLASK_ENV"] = "production"
         else:
             os.environ["FLASK_ENV"] = "development"

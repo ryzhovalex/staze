@@ -6,13 +6,13 @@ from staze.core.service.service_ie import ServiceModel
 
 if TYPE_CHECKING:
     from staze.core.app.app import Staze
-    from staze.core.hints import CLIModeEnumUnion
+    from staze.core.hints import AppModeEnumUnion
 
  
 class StazeServiceModel(ServiceModel):
     """Injection cell with app itself which is required in any build."""
     service_class: type[Staze]
-    mode_enum: CLIModeEnumUnion
+    mode_enum: AppModeEnumUnion
     host: str
     port: int
     ctx_processor_func: Callable | None = None

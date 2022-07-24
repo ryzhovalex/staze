@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 import sys
 import importlib.util
-from typing import Dict, TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any
 
 from warepy import (
     join_paths, format_message, load_yaml, get_enum_values, Singleton
@@ -10,24 +10,18 @@ from warepy import (
 from flask_socketio import SocketIO
 import pytest
 from staze.core.assembler.assembler_error import AssemblerError
-from staze.core.cli.cli_database_enum import CLIDatabaseEnum
-from staze.core.cli.cli_error import CLIError
-from staze.core.cli.cli_helper_enum import CLIHelperEnum
+from staze.core.app.app_mode_enum import (
+    DatabaseAppModeEnum, RunAppModeEnum, AppModeEnumUnion, HelperAppModeEnum)
 from staze.core.error_handler import ErrorHandler
 
 from staze.core.socket.socket import Socket
 from staze.core.service.service import Service
-from staze.core.hints import CLIModeEnumUnion
 from staze.core.log import log
-from staze.core.app.app_mode_enum import AppModeEnum
-from staze.core.cli.cli_run_enum import CLIRunEnum
 from staze.core.error.error import Error
 from staze.core.model.config import Config
 
 from staze.core.database.database import Database
 from staze.core.app.app import App
-from staze.core.hints import CLIModeEnumUnion
-from .config_extension_enum import ConfigExtensionEnum
 
 if TYPE_CHECKING:
     from .build import Build
@@ -59,7 +53,7 @@ class Assembler(Singleton):
     """
     def __init__(
             self, 
-            mode_enum: CLIModeEnumUnion,
+            mode_enum: AppModeEnumUnion,
             mode_args: list[str] = [],
             source_filename: str = 'build',
             build: Build | None = None,
@@ -74,7 +68,7 @@ class Assembler(Singleton):
         self.root_dir = root_dir
         self.socket_enabled: bool = False
 
-        self.mode_enum: CLIModeEnumUnion = mode_enum
+        self.mode_enum: AppModeEnumUnion = mode_enum
         self.mode_args: list[str] = mode_args
 
         # Load build from module
@@ -170,7 +164,7 @@ class Assembler(Singleton):
         self.config_classes: list[Config] = []
 
         config_path: str = join_paths(self.root_dir, config_dir)
-        source_map_by_name: dict[str, dict[AppModeEnum, str]] = \
+        source_map_by_name: dict[str, dict[RunAppModeEnum, str]] = \
             Config.find_config_files(config_path)
 
         for name, source_map in source_map_by_name.items():
@@ -179,7 +173,7 @@ class Assembler(Singleton):
                 source_by_app_mode=source_map))
 
     def _build_builtin_services(
-            self, mode_enum: CLIModeEnumUnion, host: str, port: int) -> None:
+            self, mode_enum: AppModeEnumUnion, host: str, port: int) -> None:
         """Assign builting service cells if configuration file for its service
         exists.
         """
@@ -226,29 +220,29 @@ class Assembler(Singleton):
         self._build_error_handler()
 
     def run(self):
-        if isinstance(self.mode_enum, CLIRunEnum):
-            if self.mode_enum is CLIRunEnum.TEST:
+        if isinstance(self.mode_enum, RunAppModeEnum):
+            if self.mode_enum is RunAppModeEnum.TEST:
                 self._run_test()
             else:
                 self._run_app()
-        elif isinstance(self.mode_enum, CLIHelperEnum):
-            if self.mode_enum is CLIHelperEnum.SHELL:
+        elif isinstance(self.mode_enum, HelperAppModeEnum):
+            if self.mode_enum is HelperAppModeEnum.SHELL:
                 self._run_shell()
-            elif self.mode_enum is CLIHelperEnum.CMD: 
+            elif self.mode_enum is HelperAppModeEnum.CMD: 
                 # TODO: Custom cmds after assembler build operations.
                 raise NotImplementedError
-            elif self.mode_enum is CLIHelperEnum.DEPLOY:
+            elif self.mode_enum is HelperAppModeEnum.DEPLOY:
                 # TODO: Implement deploy operation.
                 raise NotImplementedError
             else:
                 raise TypeError
-        elif isinstance(self.mode_enum, CLIDatabaseEnum):
+        elif isinstance(self.mode_enum, DatabaseAppModeEnum):
             with self.app.app_context():
-                if self.mode_enum is CLIDatabaseEnum.INIT:
+                if self.mode_enum is DatabaseAppModeEnum.INIT:
                     self.database.init_migration()
-                elif self.mode_enum is CLIDatabaseEnum.MIGRATE:
+                elif self.mode_enum is DatabaseAppModeEnum.MIGRATE:
                     self.database.migrate_migration()
-                elif self.mode_enum is CLIDatabaseEnum.UPGRADE:
+                elif self.mode_enum is DatabaseAppModeEnum.UPGRADE:
                     self.database.upgrade_migration()
                 else:
                     raise TypeError
@@ -278,15 +272,15 @@ class Assembler(Singleton):
             else:
                 # Parse config mapping from cell and append extra configs,
                 # if they are given
-                app_mode_enum: AppModeEnum
-                if type(self.mode_enum) is CLIRunEnum:
-                    app_mode_enum = AppModeEnum(self.mode_enum.value) 
+                app_mode_enum: RunAppModeEnum
+                if type(self.mode_enum) is RunAppModeEnum:
+                    app_mode_enum = RunAppModeEnum(self.mode_enum.value) 
                 else:
                     # Assign dev app mode for all other app modes
-                    app_mode_enum = AppModeEnum.DEV
+                    app_mode_enum = RunAppModeEnum.DEV
                 log_config = log_config_class.parse(
                     app_mode_enum=app_mode_enum,
-                    root_path=self.root_dir, 
+                    root_dir=self.root_dir, 
                     update_with=self.extra_configs_by_name.get("log", None)
                 )
 
@@ -365,24 +359,24 @@ class Assembler(Singleton):
                     "Type of cell should be Config, but {} received",
                     type(config_class_with_target_name)))
             else:
-                app_mode_enum: AppModeEnum
-                if type(self.mode_enum) is CLIRunEnum:
-                    app_mode_enum = AppModeEnum(self.mode_enum.value) 
+                app_mode_enum: RunAppModeEnum
+                if type(self.mode_enum) is RunAppModeEnum:
+                    app_mode_enum = RunAppModeEnum(self.mode_enum.value) 
                 else:
                     # Assign dev app mode for all other app modes.
-                    app_mode_enum = AppModeEnum.DEV
+                    app_mode_enum = RunAppModeEnum.DEV
                 config = config_class_with_target_name.parse(
-                    root_path=self.root_dir, 
+                    root_dir=self.root_dir, 
                     update_with=self.extra_configs_by_name.get(name, None),
                     app_mode_enum=app_mode_enum)
     
         # Each builtin service should receive essential fields for their
-        # configs, such as root_path, because they cannot import Assembler
+        # configs, such as root_dir, because they cannot import Assembler
         # due to circular import issue and get this fields by themselves
-        if 'root_path' in config:
+        if 'root_dir' in config:
             raise ValueError(
-                'Service config shouldn\'t contain key `root_path`')
-        config["root_path"] = self.root_dir
+                'Service config shouldn\'t contain key `root_dir`')
+        config["root_dir"] = self.root_dir
 
         return config
 

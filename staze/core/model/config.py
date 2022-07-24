@@ -36,7 +36,7 @@ class Config(Model):
             "No config found with given name: {}", name)
 
     def parse(
-            self, app_mode_enum: AppModeEnum, root_path: str,
+            self, app_mode_enum: AppModeEnum, root_dir: str,
             update_with: dict[str, Any] | None = None,
             convert_keys_to_lower: bool = True) -> dict[str, Any]:
         """Parse config config and return configuration dictionary.
@@ -44,7 +44,7 @@ class Config(Model):
         Args:
             app_mode_enum:
                 App mode to run appropriate config.
-            root_path:
+            root_dir:
                 Path to join config config source with.
             update_with (optional):
                 Dictionary to update config config mapping with.
@@ -63,7 +63,7 @@ class Config(Model):
         res_config = self._update_config_for_mode(config_by_mode, app_mode_enum)
 
         if res_config:
-            self._parse_string_config_values(res_config, root_path)
+            self._parse_string_config_values(res_config, root_dir)
         else:
             res_config = {}
 
@@ -138,7 +138,7 @@ class Config(Model):
         return config
     
     def _parse_string_config_values(
-            self, config: dict[str, Any], root_path: str) -> None:
+            self, config: dict[str, Any], root_dir: str) -> None:
         for k, v in config.items():
             if type(v) == str:
                 # Find environs to be requested
@@ -167,7 +167,7 @@ class Config(Model):
 
                 # Find paths required to be joined to the root path.
                 if v[0] == "." and v[1] == "/":
-                    config[k] = join_paths(root_path, v)
+                    config[k] = join_paths(root_dir, v)
                 else:
                     config[k] = v
 

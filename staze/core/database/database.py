@@ -199,7 +199,7 @@ class Database(Service):
     """Operates over database processes."""
     def __init__(self, config: dict) -> None:
         super().__init__(config)
-        self.DEFAULT_URI = f"sqlite:///{self.config['root_path']}/sqlite3.database"
+        self.DEFAULT_URI = f"sqlite:///{self.config['root_dir']}/sqlite3.database"
 
         self.native_database = orm.native_database
         # For now service config propagated to Database domain

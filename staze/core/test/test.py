@@ -7,7 +7,6 @@ from staze.core.app.app import App
 from staze.core import validation, parsing
 from staze.core.database.database import Database
 from staze.core.socket.socket import Socket
-from staze.core.get_root_dir import get_root_dir
 
 
 class Test:
@@ -57,7 +56,7 @@ class Test:
 
     @fixture
     def client(self, app: App) -> FlaskClient:
-        return app.test_client()
+        return app.test_client
 
     @fixture
     def socket_client(self, app: App, socket: Socket) -> SocketIOTestClient:
@@ -65,5 +64,5 @@ class Test:
         return socket.get_test_client()
 
     @fixture
-    def root_dir(self) -> str:
-        return get_root_dir()
+    def root_dir(self, app: App) -> str:
+        return app.root_dir
