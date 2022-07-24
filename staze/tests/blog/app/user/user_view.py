@@ -3,8 +3,8 @@ from staze import View
 from .user import User
 
 
-class UserView(View):
-    ROUTE: str = '/users'
+class UsersIdView(View):
+    ROUTE: str = '/users/<id>'
 
     def get(self, id: int):
         user: User = User.get_first(id=id)

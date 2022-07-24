@@ -9,9 +9,9 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from staze import (
     Build, Service, View, Sock)
 
-from blog.app.user.user_service import UserService
+from staze.tests.blog.app.user.user_service import UserService
 from blog.tools.shell import import_main, import_std
-from blog.app.user.user_view import UserView
+from blog.app.user.user_view import UsersIdView
 from blog.app.chat.chat_service import ChatService
 from blog.app.chat.chat_sock import ChatSock
 
@@ -26,7 +26,7 @@ sock_classes: list[type[Sock]] = [
 ]
 
 view_classes: list[type[View]] = [
-    UserView
+    UsersIdView
 ]
 
 build = Build(

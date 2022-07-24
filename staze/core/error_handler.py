@@ -2,7 +2,7 @@ from staze.core.error.error import Error
 from typing import Callable
 
 from staze.core.app.app import App
-from staze.core.log import raise_error_to_log
+from staze.core.log import log, raise_error_to_log
 from staze.core.error.error import Error
 from staze.core.service.service import Service
 from warepy import Singleton
@@ -41,6 +41,8 @@ class ErrorHandler(Singleton):
                 # Use default
                 return self.default_error_handler(err)
         else:
+            # Log builtin exceptions in any case
+            raise_error_to_log(err)
             return self.default_builtin_error_handler(err)
 
     def _handle_error_default(self, err: Error):

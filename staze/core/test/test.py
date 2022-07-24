@@ -8,50 +8,13 @@ from staze.core.app.app import App
 from staze.core import validation, parsing
 from staze.core.database.database import Database
 from staze.core.socket.socket import Socket
+from staze.core.test.http_client import HttpClient
 
 
 class Test:
     @fixture
-    def http(self, app: App, client: FlaskClient) -> Callable:
-        def inner(
-                request: str,
-                asserted_status_code: int,
-                **request_kwargs) -> TestResponse:
-            response: TestResponse
-            test_client_method: Callable
-            method: str
-            url: str
-
-            validation.validate(request, str)
-            validation.validate(asserted_status_code, int)
-
-            # Request example: 'get /users/1'
-            method, url = request.split(' ')
-
-            # Also can accept uppercase 'GET ...'
-            method = method.lower()
-
-            match method:
-                case 'get':
-                    test_client_method = app.test_client.get
-                case 'post':
-                    test_client_method = app.test_client.post
-                case 'put':
-                    test_client_method = app.test_client.put
-                case 'patch':
-                    test_client_method = app.test_client.patch
-                case 'delete':
-                    test_client_method = app.test_client.delete
-                case _:
-                    raise ValueError(f'Method {method} is not supported')
-
-            response =  test_client_method(url, **request_kwargs)
-
-            assert response.status_code == asserted_status_code
-
-            return response
-
-        return inner
+    def http(self, app: App, client: FlaskClient) -> HttpClient:
+        return HttpClient(client)
 
     @fixture
     def app(self):
@@ -59,7 +22,7 @@ class Test:
         yield app
 
     @fixture
-    def database(self, app: App):
+    def db(self, app: App):
         database: Database = Database.instance()
 
         with app.app_context():

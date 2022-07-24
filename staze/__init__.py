@@ -15,6 +15,7 @@ from .core.log import log
 from .core.database.mapper_not_found_error import MapperNotFoundError
 from .core.socket.socket import Socket
 from .core.socket.sock import Sock
+from .core.test.http_client import HttpClient
 from .core.query_parameter_error import QueryParameterError
 from .core.filter_query_enum import FilterQueryEnum
 

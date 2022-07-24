@@ -98,7 +98,7 @@ class Mapper(BaseMapper):
         model: orm.Mapper = query.first()
 
         if not model:
-            raise MapperNotFoundError(model_name=cls.__name__, **kwargs)
+            raise MapperNotFoundError(mapper_name=cls.__name__, **kwargs)
         else:
             return model
 
