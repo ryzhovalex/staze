@@ -343,7 +343,7 @@ class Assembler(Singleton):
                 else:
                     service_config = {}
 
-                service: Service = Service(config=service_config)
+                service: Service = service_class(config=service_config)
                 self._custom_services[service_class.get_config_name()] = \
                     service
 

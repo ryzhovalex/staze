@@ -165,7 +165,11 @@ class Config(Model):
                 # Look for escaped curly braces and normalize them.
                 v = v.replace(r"\{", "{").replace(r"\}", "}")
 
-                config[k] = v
+                # Find paths required to be joined to the root path
+                if v[0] == "." and v[1] == "/":
+                    config[k] = os.path.join(root_dir, v[2:])
+                else:
+                    config[k] = v
 
     @staticmethod
     def find_config_files(

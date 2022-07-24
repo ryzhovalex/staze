@@ -12,7 +12,7 @@ from staze.core.log import log
 @fixture
 def blog_build() -> Build:
     build = _blog_build
-    build.config_dir = './configs'
+    build.config_dir = 'configs'
 
     return build
 
