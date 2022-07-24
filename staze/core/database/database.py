@@ -151,8 +151,8 @@ class Orm(BaseOrm):
         else:
             return query.order_by(order_by)
 
-    @classmethod
-    def get_model(cls) -> Model:
+    @property
+    def model(cls) -> Model:
         """Transform self to a Model instance.
         
         Model here should be defined explicitly at subclass of superclass
