@@ -1,9 +1,9 @@
-from staze import orm
+from staze import Database
 
 
-class Badge(orm.Mapper):
-    name = orm.column(orm.string(150))
-    advanced_users = orm.relationship(
+class Badge(Database.Orm):
+    name = Database.column(Database.string(150))
+    advanced_users = Database.relationship(
         'AdvancedUser', backref='badge', foreign_keys='AdvancedUser.badge_id')
 
     @classmethod

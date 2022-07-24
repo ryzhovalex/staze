@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING
-from staze import orm, Database
+from staze import Database
 
 from blog.app.badge.badge import Badge
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -8,11 +8,11 @@ if TYPE_CHECKING:
     from blog.app.post.post import Post
 
 
-class User(orm.Mapper):
-    type = orm.column(orm.string(50))
-    username = orm.column(orm.string(150))
-    password = orm.column(orm.string(150))
-    posts = orm.relationship(
+class User(Database.Orm):
+    type = Database.column(Database.string(50))
+    username = Database.column(Database.string(150))
+    password = Database.column(Database.string(150))
+    posts = Database.relationship(
         'Post', backref='user', foreign_keys='[Post.user_id]')
 
     @classmethod
@@ -31,7 +31,7 @@ class User(orm.Mapper):
 
 
 class AdvancedUser(User):
-    badge_id = orm.column(orm.integer, orm.foreign_key(Badge.id))
+    badge_id = Database.column(Database.integer, Database.foreign_key(Badge.id))
 
     @classmethod
     def create(

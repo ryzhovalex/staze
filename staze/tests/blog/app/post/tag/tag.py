@@ -1,8 +1,8 @@
-from staze import orm, log
+from staze import Database, log
 
 
-class Tag(orm.Mapper):
-    name = orm.column(orm.string(100), unique=True)
+class Tag(Database.Orm):
+    name = Database.column(Database.string(100), unique=True)
 
     @classmethod
     @log.catch

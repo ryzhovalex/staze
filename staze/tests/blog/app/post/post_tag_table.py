@@ -1,9 +1,9 @@
-from staze import orm
+from staze import Database
 
 
-PostTagTable = orm.table(
+PostTagTable = Database.table(
     'post_tag',
-    orm.column(
-        'post_id', orm.integer, orm.foreign_key('post.id'), primary_key=True),
-    orm.column(
-        'tag_id', orm.integer, orm.foreign_key('tag.id'), primary_key=True))
+    Database.column(
+        'post_id', Database.integer, Database.foreign_key('post.id'), primary_key=True),
+    Database.column(
+        'tag_id', Database.integer, Database.foreign_key('tag.id'), primary_key=True))

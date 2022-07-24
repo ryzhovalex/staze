@@ -1,17 +1,17 @@
 from typing import TYPE_CHECKING
 
-from staze import orm
+from staze import Database
 
 from blog.app.user.user import User
 from .post_tag_table import PostTagTable
 from .tag.tag import Tag
 
 
-class Post(orm.Mapper):
-    title = orm.column(orm.string(150))
-    content = orm.column(orm.text)
-    user_id = orm.column(orm.integer, orm.foreign_key(User.id))
-    tags = orm.relationship(
+class Post(Database.Orm):
+    title = Database.column(Database.string(150))
+    content = Database.column(Database.text)
+    user_id = Database.column(Database.integer, Database.foreign_key(User.id))
+    tags = Database.relationship(
         'Tag', secondary=PostTagTable, lazy='subquery', backref='posts')
 
     @classmethod

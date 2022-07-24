@@ -4,13 +4,13 @@ from functools import wraps
 from typing import Callable, Any, TypeVar
 
 from warepy import format_message, snakefy
-from staze.core.database.mapper_not_found_error import MapperNotFoundError
+from staze.core.database.orm_not_found_error import OrmNotFoundError
 from staze.core.model.model import Model
 from staze.core.log import log
 from flask import Flask
 import flask_migrate
 from flask_sqlalchemy import SQLAlchemy
-from flask_sqlalchemy import Model as BaseMapper
+from flask_sqlalchemy import Model as BaseOrm
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declared_attr
 
@@ -18,7 +18,7 @@ from staze.core.service.service import Service
 from .database_type_enum import DatabaseTypeEnum
 
 
-AnyMapper = TypeVar('AnyMapper', bound='orm.Mapper')
+AnyOrm = TypeVar('AnyOrm', bound='Database.Orm')
 
 
 # TODO: Fix type hinting for decorated functions under this decorator.
@@ -37,7 +37,7 @@ def migration_implemented(func: Callable):
     return inner
 
 
-class Mapper(BaseMapper):
+class Orm(BaseOrm):
     """Base orm model responsible of holding database model's data and at least
     it's basic CRUD operations.
 
@@ -58,7 +58,7 @@ class Mapper(BaseMapper):
         return snakefy(cls_name)
 
     @declared_attr
-    def __mapper_args__(cls) -> dict[str, Any]:
+    def __orm_args__(cls) -> dict[str, Any]:
         args: dict[str, Any] = {}
         args.update({
             'polymorphic_on': 'type',
@@ -67,7 +67,7 @@ class Mapper(BaseMapper):
         return args
 
     @classmethod
-    def create(cls: AnyMapper, **kwargs) -> AnyMapper:
+    def create(cls: AnyOrm, **kwargs) -> AnyOrm:
         """Create model and return it.
         
         Accepts all given kwargs and thus is recommended to be redefined at
@@ -83,8 +83,8 @@ class Mapper(BaseMapper):
     def get_first(
             cls,
             order_by: object | list[object] | None = None,
-            **kwargs) -> orm.Mapper:
-        """Filter first ORM mapper model by given kwargs and return it.
+            **kwargs) -> Database.Orm:
+        """Filter first ORM orm model by given kwargs and return it.
         
         Raise:
             ValueError:
@@ -95,10 +95,10 @@ class Mapper(BaseMapper):
         if order_by is not None:
             query = cls._order_query(query, order_by)
 
-        model: orm.Mapper = query.first()
+        model: Database.Orm = query.first()
 
         if not model:
-            raise MapperNotFoundError(mapper_name=cls.__name__, **kwargs)
+            raise OrmNotFoundError(orm_name=cls.__name__, **kwargs)
         else:
             return model
 
@@ -107,8 +107,8 @@ class Mapper(BaseMapper):
             cls,
             order_by: object | list[object] | None = None,
             limit: int | None = None,
-            **kwargs) -> list[orm.Mapper]:
-        """Filter all ORM mapper models by given kwargs and return them.
+            **kwargs) -> list[Database.Orm]:
+        """Filter all ORM orm models by given kwargs and return them.
 
         Return:
             List of found models.
@@ -124,10 +124,10 @@ class Mapper(BaseMapper):
         elif limit:
             query = query.limit(limit)
 
-        models: list[orm.Mapper] = query.all()
+        models: list[Database.Orm] = query.all()
 
         if type(models) is not list:
-            raise MapperNotFoundError(model_name=cls.__name__, **kwargs)
+            raise OrmNotFoundError(model_name=cls.__name__, **kwargs)
         else:
             # Return models even if it's empty list
             return models
@@ -139,7 +139,7 @@ class Mapper(BaseMapper):
             **kwargs) -> None:
         """Delete first accessed by `get_first()` method model."""
         database: Database = Database.instance()
-        model: orm.Mapper = cls.get_first(order_by=order_by, **kwargs)
+        model: Database.Orm = cls.get_first(order_by=order_by, **kwargs)
 
         database.native_database.session.delete(model)
         database.commit()
@@ -159,26 +159,27 @@ class Mapper(BaseMapper):
         Model.
 
         Example:
-            UserMapper has to define User(Model) subclass and redefine this
-            method to construct User(Model) class with values from the Mapper
+            UserOrm has to define User(Model) subclass and redefine this
+            method to construct User(Model) class with values from the Orm
             it requires.
-            It's often useful for API calls to Mappers.
+            It's often useful for API calls to Orms.
 
         Returns:
             Model:
-                Model subclass contained required to expose Mapper's
+                Model subclass contained required to expose Orm's
                 properties.
         """
         raise NotImplementedError(
-            'Should be re-implemented for Mapper-specific Model subclass')
+            'Should be re-implemented for Orm-specific Model subclass')
 
 
-class orm:
+class Database(Service):
+    """Operates over database processes."""
     # Helper references for shorter writing at ORMs.
     # Ignore lines added for a workaround to fix issue:
     # https://github.com/microsoft/pylance-release/issues/187
-    native_database = SQLAlchemy(model_class=Mapper)
-    Mapper: Any = native_database.Model 
+    native_database = SQLAlchemy(model_class=Orm)
+    Orm: Any = native_database.Model 
     column = native_database.Column
     integer = native_database.Integer
     string = native_database.String
@@ -194,14 +195,11 @@ class orm:
     binary = native_database.LargeBinary
     datetime = native_database.DateTime
 
-
-class Database(Service):
-    """Operates over database processes."""
     def __init__(self, config: dict) -> None:
         super().__init__(config)
         self.DEFAULT_URI = f"sqlite:///{self.config['root_dir']}/sqlite3.database"
 
-        self.native_database = orm.native_database
+        self.native_database = Database.native_database
         # For now service config propagated to Database domain
         self._assign_uri_from_config(config)
 

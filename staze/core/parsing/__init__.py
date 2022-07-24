@@ -5,10 +5,10 @@ from werkzeug.datastructures import MultiDict
 from staze.core.parsing.parsing_error import (
     IntParsingError, KeyParsingError, ParsingError)
 from staze.core.query_parameter_error import QueryParameterError
-from staze.core.database.database import orm
 
 from staze.core.filter_query_enum import FilterQueryEnum
 from staze.core.validation import validate
+from staze.core.database.database import Database
 
 
 ParsedEntity = TypeVar('ParsedEntity', bound=Any)
@@ -78,7 +78,7 @@ def parse_int(entity: int | str) -> int:
     return res
 
 
-OrmModel = TypeVar('OrmModel', bound=orm.Mapper)
+OrmModel = TypeVar('OrmModel', bound=Database.Orm)
 
 def parse_models(
             Model: OrmModel,
@@ -111,7 +111,7 @@ def parse_models(
         if v is not None:
             method_kwargs[k] = v
 
-    models: list[orm.Mapper] = method(**method_kwargs)
+    models: list[Database.Orm] = method(**method_kwargs)
 
     if filter_query_enum is FilterQueryEnum.FIRST:
         models = [models] 
