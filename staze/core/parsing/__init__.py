@@ -78,47 +78,6 @@ def parse_int(entity: int | str) -> int:
     return res
 
 
-OrmModel = TypeVar('OrmModel', bound=Database.Orm)
-
-def parse_models(
-            Model: OrmModel,
-            filter_query: str | None = 'all',
-            **kwargs) -> list[OrmModel]:
-    """Analyze given parameters and return orm models."""
-    if filter_query is None:
-        filter_query = 'all'
-    if type(filter_query) is not str:
-        raise QueryParameterError('Filter query should be str')
-
-    try:
-        filter_query_enum: FilterQueryEnum = FilterQueryEnum(filter_query)
-    except ValueError:
-        raise QueryParameterError(
-            f'Filter query cannot be {filter_query}')
-
-    method: Callable
-    method_kwargs: dict = {}
-
-    match filter_query_enum:
-        case FilterQueryEnum.ALL:
-            method = Model.get_all  # type: ignore
-        case FilterQueryEnum.FIRST:
-            method = Model.get_first  # type: ignore
-        case _:
-            raise NotImplementedError()
-
-    for k, v in kwargs.items():
-        if v is not None:
-            method_kwargs[k] = v
-
-    models: list[Database.Orm] = method(**method_kwargs)
-
-    if filter_query_enum is FilterQueryEnum.FIRST:
-        models = [models] 
-
-    return models
-
-
 def parse_key(
         key: str, entity: dict,
         post_validation_type: type | list[type] | None = None,
