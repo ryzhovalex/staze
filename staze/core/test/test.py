@@ -3,16 +3,16 @@ from flask_socketio import SocketIOTestClient
 from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
 
-from staze.core.app.app import Staze
+from staze.core.app.app import App
 from staze.core import validation, parsing
 from staze.core.database.database import Database
-from staze.core.sock.socket import Socket
+from staze.core.socket.socket import Socket
 from staze.tools.get_root_dir import get_root_dir
 
 
 class Test:
     # @fixture
-    # def request(self, app: Staze, client: FlaskClient) -> TestResponse:
+    # def request(self, app: App, client: FlaskClient) -> TestResponse:
     #     def inner(request: str, asserted_status_code: int):
     #         response: TestResponse
     #         method: str
@@ -35,11 +35,11 @@ class Test:
 
     @fixture
     def app(self):
-        app: Staze = Staze.instance()
+        app: App = App.instance()
         yield app
 
     @fixture
-    def database(self, app: Staze):
+    def database(self, app: App):
         database: Database = Database.instance()
 
         with app.app_context():
@@ -56,11 +56,11 @@ class Test:
         return Socket.instance()
 
     @fixture
-    def client(self, app: Staze) -> FlaskClient:
+    def client(self, app: App) -> FlaskClient:
         return app.test_client()
 
     @fixture
-    def socket_client(self, app: Staze, socket: Socket) -> SocketIOTestClient:
+    def socket_client(self, app: App, socket: Socket) -> SocketIOTestClient:
         # https://github.com/miguelgrinberg/Flask-SocketIO/blob/main/test_socketio.py
         return socket.get_test_client()
 

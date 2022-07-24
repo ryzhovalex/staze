@@ -19,11 +19,11 @@ class View(MethodView):
     __metaclass__ = makecls()
 
     # Route will be the same for all methods
-    _ROUTE: str
+    ROUTE: str
     # View methods. Note that this list completely overrides HttpMethodEnum
     # for this view
-    _METHODS: list[str]
-    _ENDPOINT: str | None = None
+    METHODS: list[str]
+    ENDPOINT: str | None = None
 
     # List of decorators to apply to all view's methods.
     # decorators = [log.catch]  

@@ -8,8 +8,8 @@ from .default_sock_error_handler import default_sock_error_handler
 
 
 class Sock(Namespace):
-    _NAMESPACE: str
-    _ERROR_HANDLER: Callable = default_sock_error_handler
+    NAMESPACE: str
+    ERROR_HANDLER: Callable = default_sock_error_handler
 
     def __init__(self, namespace=None):
         super().__init__(namespace)

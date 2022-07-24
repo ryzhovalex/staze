@@ -267,7 +267,7 @@ class Assembler(Singleton):
         # Try to find log config cell and build log class from it
         if self.config_classes:
             try:
-                log_config_class = NamedModel.find_by_name("log", self.config_classes)
+                log_config_class = Config.find_by_name("log", self.config_classes)
             except ValueError:
                 log_config = None
             else:
@@ -284,31 +284,32 @@ class Assembler(Singleton):
                     root_path=self.root_dir, 
                     update_with=self.extra_configs_by_name.get("log", None)
                 )
-            self._init_log_class(config=log_config)
 
-    def _init_log_class(self, config: dict | None = None) -> None:
-        """Build log with given config.
-        
-        If config is None, build with default parameters."""
-        # Use full or partially (with replacing missing keys from default) given config.
-        log_kwargs = self.DEFAULT_LOG_PARAMS
-        if config:
-            for k, v in config.items():
-                log_kwargs[k] = v
-        log.configure(**log_kwargs)
+            # Init logger
+            log_kwargs = log.DEFAULT_LOG_PARAMS
+
+            if log_config:
+                for k, v in log_config.items():
+                    log_kwargs[k] = v
+
+            log.configure(**log_kwargs)
 
     def _build_custom_socks(self) -> None:
         if self.sock_classes and self.socket_enabled:
-            for cell in self.sock_classes:
+            for sock_class in self.sock_classes:
                 socketio: SocketIO = self.socket.get_socketio()
 
                 # Register class for socketio namespace
                 # https://flask-socketio.readthedocs.io/en/latest/getting_started.html#class-based-namespaces
-                socketio.on_namespace(cell.handler_class(cell.namespace))
+                socketio.on_namespace(sock_class(sock_class.NAMESPACE))
                 # Also register error handler for the same namespace
-                socketio.on_error(cell.namespace)(cell.error_handler) 
+                socketio.on_error(sock_class.NAMESPACE)(
+                    sock_class.ERROR_HANDLER) 
         elif self.sock_classes and not self.socket_enabled:
-            raise AssemblerError()
+            raise AssemblerError(
+                'Sock classes are given, but Socket itself is not enabled')
+        elif not self.sock_classes and self.socket_enabled:
+            log.warning('Socket enabled, but sock classes are not given')
 
     def _perform_database_postponed_setup(self) -> None:
         """Postponed setup is required, because Database uses Flask app to init
@@ -329,7 +330,8 @@ class Assembler(Singleton):
                     service_config = {}
 
                 service: Service = Service(config=service_config)
-                self._custom_services[cell.service_class.__name__] = service
+                self._custom_services[service_class.get_config_name()] = \
+                    service
 
     def _assemble_service_config(
             self,

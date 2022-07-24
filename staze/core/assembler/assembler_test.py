@@ -2,7 +2,7 @@ from pytest import fixture
 from staze.core.assembler.assembler import Assembler
 from staze.core.assembler.build import Build
 from staze.core.cli.cli_run_enum import CLIRunEnum
-from staze.core.app.app import Staze
+from staze.core.app.app import App
 from staze.core.database.database import Database
 from staze.tools.log import log
 from staze.tests.blog.app.user.user_service import UserService
@@ -19,6 +19,6 @@ def assembler_dev(blog_build: Build, default_host: str, default_port: int):
 
 class TestAssembler():
     def test_build(self, assembler_dev: Assembler):
-        staze = Staze.instance()
-        database = Database.instance()
-        user_service: UserService = assembler_dev.custom_services['UserService']
+        app: App = App.instance()
+        database: Database = Database.instance()
+        user_service: UserService = assembler_dev.custom_services['user']

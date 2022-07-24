@@ -2,8 +2,7 @@ import os
 import sys
 
 from pytest import fixture
-from staze import (
-    Build, ServiceModel, ViewModel, SockModel)
+from staze import Build
 
 from staze.tests.blog.build import build as _blog_build
 from staze.tools.log import log

@@ -7,11 +7,11 @@ from staze.core.service.service import Service
 from staze.tools.log import log
 
 if TYPE_CHECKING:
-    from staze.core.app.app import Staze
+    from staze.core.app.app import App
 
 
 class Socket(Service):
-    def __init__(self, config: dict, app: 'Staze') -> None:
+    def __init__(self, config: dict, app: 'App') -> None:
         super().__init__(config)
         self.app = app
         cors_allowed_origin = self.config.get('cors_allowed_origin', '*')
