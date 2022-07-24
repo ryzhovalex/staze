@@ -5,7 +5,7 @@ from copy import copy
 from dataclasses import dataclass
 from typing import Any, TypeVar, Sequence
 
-from warepy import join_paths, load_yaml, get_enum_values
+from warepy import load_yaml, get_enum_values
 
 from staze.core.app.app_mode_enum import RunAppModeEnum
 from ..assembler.config_extension_enum import ConfigExtensionEnum
@@ -165,11 +165,7 @@ class Config(Model):
                 # Look for escaped curly braces and normalize them.
                 v = v.replace(r"\{", "{").replace(r"\}", "}")
 
-                # Find paths required to be joined to the root path.
-                if v[0] == "." and v[1] == "/":
-                    config[k] = join_paths(root_dir, v)
-                else:
-                    config[k] = v
+                config[k] = v
 
     @staticmethod
     def find_config_files(
@@ -191,9 +187,9 @@ class Config(Model):
         source_map_by_name = {} 
         for filename in os.listdir(config_path):
             # Pick files only under config_dir.
-            if os.path.isfile(join_paths(config_path, filename)):
+            if os.path.isfile(os.path.join(config_path, filename)):
                 parts = filename.split(".")
-                file_path = join_paths(config_path, filename)
+                file_path = os.path.join(config_path, filename)
 
                 if len(parts) == 1:
                     # Skip files without extension.

@@ -1,3 +1,5 @@
+import os
+
 from pytest import fixture
 from staze.core.assembler.assembler import Assembler
 from staze.core.assembler.build import Build
@@ -9,12 +11,15 @@ from staze.tests.blog.app.user.user_service import UserService
 
 
 @fixture
-def assembler_dev(blog_build: Build, default_host: str, default_port: int):
+def assembler_dev(
+        blog_build: Build, default_host: str, default_port: int,
+        blog_root_dir: str):
     return Assembler(
         build=blog_build,
         mode_enum=RunAppModeEnum.DEV,
         host=default_host,
-        port=default_port)
+        port=default_port,
+        root_dir=os.path.join(os.getcwd(), blog_root_dir))
 
 
 class TestAssembler():

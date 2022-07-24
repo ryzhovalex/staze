@@ -18,6 +18,8 @@ class Build:
     Args:
         version (optional):
             Version of the project. Defaults to '0.0.0'
+        env_path (optional):
+            Path to file with environment variables. Defaults to '.env'
         config_dir (optional):
             Directory of configuration files. Defaults to './src/configs'
         service_classes (optional):
@@ -49,7 +51,9 @@ class Build:
     """
     def __init__(
             self,
+            *,
             version: str = '0.0.0',
+            env_path: str = '.env',
             config_dir: str = './src/configs',
             service_classes: list[type[Service]] = [],
             view_classes: list[type[View]] = [],
@@ -62,6 +66,7 @@ class Build:
             each_request_func: Callable | None = None,
             first_request_func: Callable | None = None) -> None:
         self.version = version
+        self.env_path = env_path
         self.config_dir = config_dir
         self.service_classes = service_classes
         self.view_classes = view_classes

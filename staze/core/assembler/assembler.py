@@ -3,9 +3,10 @@ import os
 import sys
 import importlib.util
 from typing import TYPE_CHECKING, Any
+from dotenv import load_dotenv
 
 from warepy import (
-    join_paths, format_message, load_yaml, get_enum_values, Singleton
+    format_message, load_yaml, get_enum_values, Singleton
 )
 from flask_socketio import SocketIO
 import pytest
@@ -77,6 +78,9 @@ class Assembler(Singleton):
         else:
             self.build = self._load_target_build(source_filename)
 
+        # Environs should be loaded from app's root directory
+        load_dotenv(os.path.join(self.root_dir, self.build.env_path))
+
         # Use build in further assignment
         self.service_classes = self.build.service_classes
         self.view_classes = self.build.view_classes
@@ -90,7 +94,18 @@ class Assembler(Singleton):
         self.default_builtin_error_hanlder = \
             self.build.default_builtin_error_handler
 
-        self._build_configs(self.build.config_dir)
+        # Load env or use build default
+        self.config_dir: str
+        env_config_dir = os.getenv('CONFIG_DIR')
+        if isinstance(env_config_dir, str) and env_config_dir:
+            log.info(
+                f'Env CONFIG_DIR specified to {env_config_dir},'
+                ' use it by default')
+            self.config_dir = env_config_dir
+        else:
+            self.config_dir = self.build.config_dir
+
+        self._build_configs(self.config_dir)
         
         self._build_builtin_services(mode_enum, host, port)
         self._build_builtin_helpers()
@@ -163,7 +178,7 @@ class Assembler(Singleton):
         """
         self.config_classes: list[Config] = []
 
-        config_path: str = join_paths(self.root_dir, config_dir)
+        config_path: str = os.path.join(self.root_dir, config_dir)
         source_map_by_name: dict[str, dict[RunAppModeEnum, str]] = \
             Config.find_config_files(config_path)
 
@@ -387,7 +402,7 @@ class Assembler(Singleton):
             Replace this logic with senseful one. Better use configuration's
             version? Or __init__.py or main.py specified.
         """
-        info_data = load_yaml(join_paths(self.root_dir, "./info.yaml"))
+        info_data = load_yaml(os.path.join(self.root_dir, "./info.yaml"))
         project_version = info_data["version"]
         return project_version
 

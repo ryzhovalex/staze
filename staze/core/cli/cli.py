@@ -5,12 +5,11 @@ import pytest
 from typing import get_args
 
 from warepy import (
-    format_message, join_paths, match_enum_containing_value,
+    match_enum_containing_value,
     get_enum_values, get_union_enum_values
 )
 from staze.core.cli.cli_error import CLIError
 from staze.core.log import log
-from dotenv import load_dotenv
 
 from staze import __version__ as staze_version
 from staze.core.assembler.assembler import Assembler
@@ -21,9 +20,6 @@ from staze.core.cli.cli_input import CliInput
 
 
 def main() -> None:
-    # Environs should be loaded from app's root directory
-    load_dotenv(os.path.join(os.getcwd(), '.env'))
-
     args: CliInput = _parse_input()
 
     match args.mode_enum:
