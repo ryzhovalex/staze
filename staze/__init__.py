@@ -1,4 +1,4 @@
-__version__ = '0.1.0dev0'
+__version__ = '0.1.0dev1'
 
 from .core.error.error import Error
 from .core.model.model import Model
