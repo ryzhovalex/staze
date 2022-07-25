@@ -59,15 +59,19 @@ class Orm(BaseOrm):
 
     @declared_attr
     def __tablename__(cls) -> str:
-        cls_name: str = cls.__name__.replace(cls._BASE_NAME, '')  # type: ignore
+        cls_name: str = cls.__name__  # type: ignore
         return snakefy(cls_name)
+
+    @declared_attr
+    def __identity__(cls) -> str:
+        return cls.__name__.replace(cls._BASE_NAME, '')  # type: ignore
 
     @declared_attr
     def __mapper_args__(cls) -> dict[str, Any]:
         args: dict[str, Any] = {}
         args.update({
             'polymorphic_on': 'type',
-            'polymorphic_identity': cls.__tablename__
+            'polymorphic_identity': cls.__identity__
         })
         return args
 
