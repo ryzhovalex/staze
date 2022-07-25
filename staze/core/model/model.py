@@ -17,6 +17,10 @@ class Model(BaseModel):
     def formatted_name(self) -> str:
         return self._get_formatted_name()
 
+    @property
+    def api_dict(self) -> dict:
+        return self.get_api_dict()
+
     def get_api_dict(self, formatted_name: str | None = None) -> dict:
         """Translates interface to dict structure for API.
         
