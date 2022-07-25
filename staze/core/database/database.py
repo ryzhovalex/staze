@@ -64,7 +64,7 @@ class Orm(BaseOrm):
 
     @declared_attr
     def __identity__(cls) -> str:
-        return cls.__name__.replace(cls._BASE_NAME, '')  # type: ignore
+        return snakefy(cls.__name__.replace(cls._BASE_NAME, ''))  # type: ignore
 
     @declared_attr
     def __mapper_args__(cls) -> dict[str, Any]:
