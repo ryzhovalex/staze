@@ -63,7 +63,7 @@ class Orm(BaseOrm):
         return snakefy(cls_name)
 
     @declared_attr
-    def __orm_args__(cls) -> dict[str, Any]:
+    def __mapper_args__(cls) -> dict[str, Any]:
         args: dict[str, Any] = {}
         args.update({
             'polymorphic_on': 'type',
