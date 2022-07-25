@@ -47,14 +47,19 @@ class Orm(BaseOrm):
     (e.g. `set_something()`), and by default accessed via basic model
     alteration, e.g. `MyModel.name = 'Another name'`.
     """
-    # sqlalchemy used instead of `orm` class to avoid reference errors
+    # As superclass sqlalchemy used instead of `orm` class to avoid reference
+    # errors
     # https://flask-sqlalchemy.palletsprojects.com/en/2.x/customizing/
+
+    # Name to exclude on tablename forming
+    _BASE_NAME: str = 'Orm'
+
     id = sa.Column(sa.Integer, primary_key=True)
     type = sa.Column(sa.String(250))
 
     @declared_attr
     def __tablename__(cls) -> str:
-        cls_name: str = cls.__name__  # type: ignore
+        cls_name: str = cls.__name__.replace(cls._BASE_NAME, '')  # type: ignore
         return snakefy(cls_name)
 
     @declared_attr
