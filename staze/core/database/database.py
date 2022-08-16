@@ -82,7 +82,7 @@ class Orm(BaseOrm):
     def __mapper_args__(cls) -> dict[str, Any]:
         args: dict[str, Any] = {}
         args.update({
-            'polymorphic_on': 'type',
+            'polymorphic_on': '_type',
             'polymorphic_identity': cls.__identity__
         })
         return args
