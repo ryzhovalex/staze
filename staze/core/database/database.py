@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 from functools import wraps
-from typing import Callable, Any, TypeVar
+from typing import TYPE_CHECKING, Callable, Any, TypeVar
 
 from warepy import format_message, snakefy
 from staze.core.database.orm_not_found_error import OrmNotFoundError
@@ -12,10 +12,14 @@ import flask_migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_sqlalchemy import Model as BaseOrm
 import sqlalchemy as sa
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.ext.declarative import declared_attr
 
 from staze.core.service.service import Service
 from .database_type_enum import DatabaseTypeEnum
+
+if TYPE_CHECKING:
+    hybrid_property = property
 
 
 AnyOrm = TypeVar('AnyOrm', bound='Database.Orm')
@@ -54,8 +58,16 @@ class Orm(BaseOrm):
     # Name to exclude on tablename forming
     _BASE_NAME: str = 'Orm'
 
-    id = sa.Column(sa.Integer, primary_key=True)
-    type = sa.Column(sa.String(250))
+    _id = sa.Column(sa.Integer, primary_key=True)
+    _type = sa.Column(sa.String(250))
+
+    @hybrid_property
+    def id(self):
+        return self._id
+
+    @hybrid_property
+    def type(self):
+        return self.type
 
     @declared_attr
     def __tablename__(cls) -> str:
@@ -85,7 +97,6 @@ class Orm(BaseOrm):
         Model creation intended to be done only through this method.
         """
         model = cls(**kwargs)
-        Database.instance().push(model)
         return model
 
     @classmethod
@@ -142,16 +153,14 @@ class Orm(BaseOrm):
             return models
 
     @classmethod
-    def del_first(
+    def delete_first(
             cls,
             order_by: object | list[object] | None = None,
             **kwargs) -> None:
         """Delete first accessed by `get_first()` method model."""
         database: Database = Database.instance()
         model: Database.Orm = cls.get_first(order_by=order_by, **kwargs)
-
-        database.native_database.session.delete(model)
-        database.commit()
+        database.delete(model)
 
     @staticmethod
     def _order_query(query: Any, order_by: object | list[object]) -> object:
@@ -333,14 +342,19 @@ class Database(Service):
         self.native_database.drop_all()
 
     @migration_implemented
-    def _add(self, entity):
+    def add(self, entity):
         """Place an object in the session."""
         # TODO: Add functionality to accept multiple entities as *args.
         self.native_database.session.add(entity)
 
+    @migration_implemented
+    def delete(self, entity):
+        self.native_database.session.delete(entity)
+
+    @migration_implemented
     def push(self, entity):
         """Add entity to session and immediately commit the session."""
-        self._add(entity)
+        self.add(entity)
         self.commit()
 
     @migration_implemented
