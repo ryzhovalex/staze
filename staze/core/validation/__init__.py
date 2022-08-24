@@ -12,10 +12,10 @@ def validate(
     if isinstance(expected_type, type):
         if strict:
             if type(obj) is not expected_type:
-                raise ValidationError(obj_name, expected_type)
+                raise ValidationError(expected_type, obj_name)
         else:
             if not isinstance(obj, expected_type):
-                raise ValidationError(obj_name, expected_type)
+                raise ValidationError(expected_type, obj_name)
     elif type(expected_type) is list:
         found: bool = False
 
@@ -24,7 +24,7 @@ def validate(
                 found = True
         
         if not found:
-            raise ValidationError(obj_name, expected_type)
+            raise ValidationError(expected_type, obj_name)
     else:
         raise TypeError('Expected type should be `type` type')
 

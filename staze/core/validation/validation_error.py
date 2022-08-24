@@ -5,8 +5,8 @@ from staze.core.error.error import Error
 class ValidationError(Error):
     def __init__(
             self,
-            validated_name: str,
             expected_type: type | list[type],
+            validated_name: str = 'Entity',
             message: str | None = None,
             status_code: int | None = None) -> None:
         super().__init__(message, status_code)
@@ -29,8 +29,8 @@ class ValidationError(Error):
 class ReValidationError(Error):
     def __init__(
             self,
-            validated_name: str,
             pattern: str,
+            validated_name: str = 'Entity',
             message: str | None = None,
             status_code: int | None = None) -> None:
         super().__init__(message, status_code)
