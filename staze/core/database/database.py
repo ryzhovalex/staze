@@ -67,7 +67,7 @@ class Orm(BaseOrm):
 
     @hybrid_property
     def type(self):
-        return self.type
+        return self._type
 
     @declared_attr
     def __tablename__(cls) -> str:
