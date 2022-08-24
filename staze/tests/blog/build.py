@@ -10,19 +10,14 @@ from staze import (
     Build, Service, View, Sock)
 
 from staze.tests.blog.app.user.user_service import UserService
-from blog.tools.shell import import_main, import_std
 from blog.app.user.user_view import UsersIdView
-from blog.app.chat.chat_service import ChatService
-from blog.app.chat.chat_sock import ChatSock
 
 
 service_classes: list[type[Service]] = [
-    ChatService,
     UserService
 ]
 
 sock_classes: list[type[Sock]] = [
-    ChatSock
 ]
 
 view_classes: list[type[View]] = [
@@ -33,5 +28,4 @@ build = Build(
     version=__version__,
     service_classes=service_classes,
     view_classes=view_classes,
-    shell_processors=[import_std, import_main],
     sock_classes=sock_classes)

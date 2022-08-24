@@ -342,20 +342,37 @@ class Database(Service):
         self.native_database.drop_all()
 
     @migration_implemented
-    def add(self, entity):
+    def add(self, *entities):
         """Place an object in the session."""
-        # TODO: Add functionality to accept multiple entities as *args.
-        self.native_database.session.add(entity)
+        for entity in entities:
+            self.native_database.session.add(entity)
 
     @migration_implemented
-    def delete(self, entity):
-        self.native_database.session.delete(entity)
+    def delete(self, *entities):
+        for entity in entities:
+            self.native_database.session.delete(entity)
 
     @migration_implemented
-    def push(self, entity):
+    def push(self, *entities):
         """Add entity to session and immediately commit the session."""
-        self.add(entity)
+        for entity in entities:
+            self.add(entity)
         self.commit()
+
+    @migration_implemented
+    def refresh(self, *entities):
+        for entity in entities:
+            self.native_database.session.refresh(entity)
+
+    @migration_implemented
+    def expire(self, *entities):
+        for entity in entities:
+            self.native_database.session.expire(entity)
+
+    @migration_implemented
+    def refpush(self, *entities):
+        self.push(*entities)
+        self.refresh(*entities)
 
     @migration_implemented
     def commit(self):

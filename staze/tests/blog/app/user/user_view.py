@@ -1,14 +1,14 @@
 from staze import View
 
-from .user import User
+from .user_orm import UserOrm
 
 
 class UsersIdView(View):
     ROUTE: str = '/users/<id>'
 
     def get(self, id: int):
-        user: User = User.get_first(id=id)
+        user_orm: UserOrm = UserOrm.get_first(id=id)
         return {
-            'username': user.username,
-            'post_ids': [post.id for post in user.posts]
+            'username': user_orm.username,
+            'post_ids': user_orm.post_ids
         }
