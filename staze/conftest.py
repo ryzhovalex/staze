@@ -5,7 +5,8 @@ from pytest import fixture
 from staze import Build
 
 from staze.tests.blog.build import build as _blog_build
-from staze.core.assembler.assembler_test import assembler_dev
+from staze.core.assembler.assembler_test import (
+    assembler_test, assembler_dev, assembler_prod)
 from staze.core.log import log
 from staze.tests.blog.app.user.user_test import user_orm
 from staze.tests.blog.app.post.post_test import post_orm

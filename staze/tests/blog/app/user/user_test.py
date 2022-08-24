@@ -30,6 +30,22 @@ def user_orm(app: App, db: Database) -> UserOrm:
 
 
 class TestUserService(Test):
+    def test_config_mode_test(self, assembler_test: Assembler):
+        assert \
+            assembler_test.custom_services['user'].config['config_mode'] \
+                == 'test'
+
+    def test_config_mode_dev(self, assembler_dev: Assembler):
+        log.debug(assembler_dev.mode_enum)
+        assert \
+            assembler_dev.custom_services['user'].config['config_mode'] \
+                == 'dev'
+
+    def test_config_mode_prod(self, assembler_prod: Assembler):
+        assert \
+            assembler_prod.custom_services['user'].config['config_mode'] \
+                == 'prod'
+
     def test_photo_path(
             self, assembler_dev: Assembler, app: App, root_dir: str):
         assert \

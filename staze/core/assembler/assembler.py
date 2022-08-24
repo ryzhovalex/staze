@@ -2,7 +2,7 @@ from __future__ import annotations
 import os
 import sys
 import importlib.util
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
 from dotenv import load_dotenv
 
 from warepy import (
@@ -68,7 +68,6 @@ class Assembler(Singleton):
         self.extra_configs_by_name = {}
         self.root_dir = root_dir
         self.socket_enabled: bool = False
-
         self.mode_enum: AppModeEnumUnion = mode_enum
         self.mode_args: list[str] = mode_args
 
@@ -112,6 +111,10 @@ class Assembler(Singleton):
 
         # Namespace to hold all initialized services. Should be used only for
         # testing purposes, when direct import of services are unavailable
+        # NOTE:
+        #   Don't reference this type as dict[str, Service], since accessing
+        #   child service might throw a linter error (e.g. Service is 
+        #   uncompatible with UserService)
         self._custom_services: dict[str, Any] = {}
 
         # Add extra configs
@@ -429,3 +432,11 @@ class Assembler(Singleton):
             app=self.app,
             default_error_handler=self.default_error_handler,
             default_builtin_error_handler=self.default_builtin_error_hanlder)
+
+    def cleanup_all_services(self) -> None:
+        """Unlink all services from singletons.
+        
+        Used only for self-testing purposes.
+        """
+        for ServiceClass in self.custom_services.values():
+            ServiceClass.__class__.instances = {}

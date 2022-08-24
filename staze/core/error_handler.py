@@ -35,6 +35,7 @@ class ErrorHandler(Singleton):
         if isinstance(err, Error):
             if err.SHOULD_BE_LOGGED:
                 raise_error_to_log(err)
+
             if err.HANDLER_FUNCTION:
                 return err.HANDLER_FUNCTION(err)
             else:

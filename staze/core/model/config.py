@@ -7,7 +7,8 @@ from typing import Any, TypeVar, Sequence
 
 from warepy import load_yaml, get_enum_values
 
-from staze.core.app.app_mode_enum import RunAppModeEnum
+from staze.core.app.app_mode_enum import AppModeEnumUnion, RunAppModeEnum
+from staze.core.assembler.assembler_error import AssemblerError
 from ..assembler.config_extension_enum import ConfigExtensionEnum
 from staze.core.model.model import Model
 from staze.core.log import log
@@ -208,6 +209,18 @@ class Config(Model):
                         # `prod`.
                         if config_name not in source_map_by_name:
                             source_map_by_name[config_name] = dict()
+                        else:
+                            # Raise error explicitly for duplicate
+                            # home.yaml and home.prod.yaml to avoid confusion
+                            if \
+                                    source_map_by_name[config_name].get(
+                                        RunAppModeEnum.PROD) is not None:
+                                raise AssemblerError(
+                                    'Double production config reference for'
+                                    + f' config named {config_name}'
+                                    + ', you probably referenced both '
+                                    + f'{config_name}.prod.yaml'
+                                    + f' and {config_name}.yaml files')
                         source_map_by_name[config_name][
                             RunAppModeEnum.PROD] = file_path
                     else:
@@ -224,6 +237,19 @@ class Config(Model):
                         # app mode.
                         if config_name not in source_map_by_name:
                             source_map_by_name[config_name] = dict()
+                        else:
+                            # Raise error explicitly for duplicate
+                            # home.yaml and home.prod.yaml to avoid confusion
+                            if \
+                                    source_map_by_name[config_name].get(
+                                        RunAppModeEnum.PROD) is not None \
+                                    and parts[1] == 'prod':
+                                raise AssemblerError(
+                                    'Double production config reference for'
+                                    + f' config named {config_name}'
+                                    + ', you probably referenced both '
+                                    + f'{config_name}.prod.yaml'
+                                    + f' and {config_name}.yaml files')
                         source_map_by_name[config_name][
                             RunAppModeEnum(parts[1])] = file_path
                     else:

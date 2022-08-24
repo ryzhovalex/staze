@@ -16,14 +16,10 @@ service_classes: list[type[Service]] = [
     UserService
 ]
 
-sock_classes: list[type[Sock]] = [
-]
-
 view_classes: list[type[View]] = [
 ]
 
 build = Build(
     version=__version__,
     service_classes=service_classes,
-    view_classes=view_classes,
-    sock_classes=sock_classes)
+    view_classes=view_classes)
