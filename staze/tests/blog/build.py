@@ -10,7 +10,6 @@ from staze import (
     Build, Service, View, Sock)
 
 from staze.tests.blog.app.user.user_service import UserService
-from blog.app.user.user_view import UsersIdView
 
 
 service_classes: list[type[Service]] = [
@@ -21,7 +20,6 @@ sock_classes: list[type[Sock]] = [
 ]
 
 view_classes: list[type[View]] = [
-    UsersIdView
 ]
 
 build = Build(

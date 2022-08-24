@@ -13,7 +13,7 @@ from staze.tests.blog.app.user.user_service import UserService
 
 
 @fixture
-def user_orm(self, app: App, db: Database) -> UserOrm:
+def user_orm(app: App, db: Database) -> UserOrm:
     with app.app_context():
         return UserOrm.create(username='Mark', password='helloworld')
 
@@ -41,5 +41,5 @@ class TestUserOrm(Test):
     def test_create(self, app: App, db: Database, user_orm: UserOrm):
         with app.app_context():
             db.refpush(user_orm)
-            assert user_orm.username != 'Mark'
+            assert user_orm.username == 'Mark'
             assert user_orm.check_password('helloworld')

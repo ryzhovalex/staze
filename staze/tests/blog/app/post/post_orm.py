@@ -1,12 +1,9 @@
 from typing import TYPE_CHECKING
 
-from staze import Database
-
+from staze.core.database.database import Database
 from .post_tag_table import PostTagTable
 from staze.tests.blog.app.user.user_orm import UserOrm
-
-if TYPE_CHECKING:
-    from staze.tests.blog.app.tag.tag_orm import TagOrm
+from staze.tests.blog.app.tag.tag_orm import TagOrm
 
 
 class PostOrm(Database.Orm):

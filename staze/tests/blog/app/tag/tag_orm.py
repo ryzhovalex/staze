@@ -1,4 +1,4 @@
-from staze import Database, log
+from staze.core.database.database import Database
 
 
 class TagOrm(Database.Orm):

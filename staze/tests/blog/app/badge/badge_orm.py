@@ -9,9 +9,9 @@ if TYPE_CHECKING:
 class BadgeOrm(Database.Orm):
     _name = Database.column(Database.string(150))
     _advanced_user_orms = Database.relationship(
-        'AdvancedUser',
+        'AdvancedUserOrm',
         backref='_badge_orm',
-        foreign_keys='AdvancedUser._badge_id')
+        foreign_keys='AdvancedUserOrm._badge_id')
 
     @classmethod
     def create(cls, name: str) -> 'BadgeOrm':
