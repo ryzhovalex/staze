@@ -41,8 +41,8 @@ def _parse_input() -> CliInput:
     args: list[str] = sys.argv
     check_other_args: bool = True
 
-    model_kwargs: dict = {}
-    model_kwargs['mode_args'] = []
+    mode_kwargs: dict = {}
+    mode_kwargs['mode_args'] = []
 
 
     match args[1]:
@@ -52,7 +52,7 @@ def _parse_input() -> CliInput:
                     'Mode `version` shouldn\'t be'
                     ' followed by any other arguments')
 
-            model_kwargs['mode_enum'] = HelperAppModeEnum.VERSION
+            mode_kwargs['mode_enum'] = HelperAppModeEnum.VERSION
             check_other_args = False 
         case _:
             try:
@@ -64,7 +64,7 @@ def _parse_input() -> CliInput:
                     f'Unrecognized mode: {args[1]}')
             else:
                 # Create according enum with mode value
-                model_kwargs['mode_enum'] = mode_enum_class(args[1])
+                mode_kwargs['mode_enum'] = mode_enum_class(args[1])
 
     if check_other_args:
         # Traverse other args
@@ -73,11 +73,12 @@ def _parse_input() -> CliInput:
 
             match arg:
                 case '-h':
-                    if not isinstance(model_kwargs['mode_enum'], RunAppModeEnum):
+                    if not isinstance(
+                            mode_kwargs['mode_enum'], RunAppModeEnum):
                         raise CLIError(
                             'Flag -h applicable only to Run modes:'
                             f' {get_enum_values(RunAppModeEnum)}')
-                    elif '-h' in model_kwargs:
+                    elif '-h' in mode_kwargs:
                         raise CLIError('Flag -h has been defined twice')
                     else:
                         try:
@@ -90,13 +91,14 @@ def _parse_input() -> CliInput:
                             validation.validate_re(
                                 host,
                                 r'^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}$')
-                        model_kwargs['host'] = host
+                        mode_kwargs['host'] = host
                 case '-p':
-                    if not isinstance(model_kwargs['mode_enum'], RunAppModeEnum):
+                    if not isinstance(
+                            mode_kwargs['mode_enum'], RunAppModeEnum):
                         raise CLIError(
                             'Flag -p applicable only to Run modes:'
                             f' {get_enum_values(RunAppModeEnum)}')
-                    elif '-p' in model_kwargs:
+                    elif '-p' in mode_kwargs:
                         raise CLIError('Flag -p has been defined twice')
                     else:
                         try:
@@ -108,14 +110,40 @@ def _parse_input() -> CliInput:
                             validation.validate_re(
                                 port,
                                 r'^\d+$')
-                        model_kwargs['port'] = port
+                        mode_kwargs['port'] = port
+                case '-x':
+                    # Mode -x applicable to pytest flag and to dev and
+                    # prod modes as additional functions executor
+                    executable_func_names: list[str] = []
+
+                    if not isinstance(
+                            mode_kwargs['mode_enum'], RunAppModeEnum):
+                        raise CLIError(
+                            'Flag -x can only be used with run modes:'
+                            f' {get_enum_values(RunAppModeEnum)}') 
+
+                    # pytest by itself handles -x flag, other cases is up to us
+                    if mode_kwargs['mode_enum'] is RunAppModeEnum.TEST:
+                        mode_kwargs['mode_args'].append(arg)
+                    else:
+                        for name in args[ix+1:]:
+                            if '-' in name:
+                                break
+                            executable_func_names.append(name)
+
+                        if executable_func_names == []:
+                            raise CLIError(
+                                'Flag -x for modes prod and dev')
+
+                        mode_kwargs['executable_func_names'].append(
+                            executable_func_names)
                 case _:
                     # In all other cases, write results to mode_args as it is,
                     # this is required, e.g. in pytest as well as in all other
                     # plugins and custom commands
-                    model_kwargs['mode_args'].append(arg)
+                    mode_kwargs['mode_args'].append(arg)
 
-    return CliInput(**model_kwargs)
+    return CliInput(**mode_kwargs)
 
 
 if __name__ == "__main__":
