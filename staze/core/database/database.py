@@ -375,6 +375,10 @@ class Database(Service):
         self.refresh(*entities)
 
     @migration_implemented
+    def flush(self):
+        self.native_database.session.flush()
+
+    @migration_implemented
     def commit(self):
         """Commit current transaction."""
         self.native_database.session.commit()
