@@ -338,7 +338,7 @@ class Database(Service):
 
     @migration_implemented
     def drop_all(self):
-        "Drop all tables."
+        """Drop all tables."""
         self.native_database.drop_all()
 
     @migration_implemented
