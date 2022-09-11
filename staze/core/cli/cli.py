@@ -29,7 +29,11 @@ class Cli():
         self.build = build
         self.root_dir = root_dir
 
-    def execute(self, args: list[str] | None = None) -> None:
+    def execute(
+                self,
+                args: list[str] | None = None,
+                has_to_run_app: bool = True
+            ) -> Assembler:
         cli_input: CliInput = self._parse_input(args)
 
         match cli_input.mode_enum:
@@ -51,7 +55,11 @@ class Cli():
                     port=cli_input.port,
                     root_dir=root_dir,
                     build=self.build)
-                assembler.run()
+
+                if has_to_run_app:
+                    assembler.run()
+
+                return assembler
 
     def _parse_input(self, args: list[str] | None = None) -> CliInput:
         if not args:
@@ -78,9 +86,9 @@ class Cli():
                 except ValueError:
                     raise CLIError(
                         f'Unrecognized mode: {args[1]}')
-                else:
-                    # Create according enum with mode value
-                    mode_kwargs['mode_enum'] = mode_enum_class(args[1])
+
+                # Create according enum with mode value
+                mode_kwargs['mode_enum'] = mode_enum_class(args[1])
 
         if check_other_args:
             # Traverse other args

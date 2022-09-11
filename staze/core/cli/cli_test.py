@@ -7,6 +7,7 @@ from staze.core.assembler.build import Build
 from staze.core.validation import validate_re
 from staze.core.cli.cli import Cli
 from staze.core.log import log
+from staze.core.assembler.assembler import Assembler
 
 
 # FIXME: Remove and import from warepy as it is introduced there
@@ -21,9 +22,21 @@ class Capturing(list):
         sys.stdout = self._stdout
 
 
+@fixture
+def cli() -> Cli:
+    return Cli()
+
+
+@fixture
+def cli_blog(blog_root_dir: str, blog_build: Build):
+    yield Cli(root_dir=blog_root_dir, build=blog_build)
+    assembler: Assembler = Assembler.instance()
+    assembler.cleanup_all_services()
+    assembler.__class__.instances = {}
+
+
 class TestCliExecute(Test):
-    def test_default(self):
-        cli = Cli()
+    def test_default(self, cli: Cli):
         with Capturing() as out:
             try:
                 cli.execute(['staze', 'version'])
@@ -31,12 +44,12 @@ class TestCliExecute(Test):
                 pass
             else:
                 raise AssertionError('')
-
         assert len(out) == 1
         validate_re(out[0], r'Staze \d+\.\d+\.\d+')
 
-    def test_dev(self, blog_root_dir: str, blog_build: Build):
-        cli = Cli(root_dir=blog_root_dir)
+    def test_dev(self, cli_blog: Cli):
         with Capturing() as out:
-            cli.execute(['staze', 'dev'])
-            
+            assembler: Assembler = cli_blog.execute(
+                ['staze', 'dev'], has_to_run_app=False)
+
+        assert assembler.mode_enum.value == 'dev'

@@ -440,3 +440,4 @@ class Assembler(Singleton):
         """
         for ServiceClass in self.custom_services.values():
             ServiceClass.__class__.instances = {}
+        self._custom_services = {}

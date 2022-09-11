@@ -31,12 +31,14 @@ def user_orm(app: App, db: Database) -> UserOrm:
 
 class TestUserService(Test):
     def test_config_mode_test(self, assembler_test: Assembler):
+        log.debug(assembler_test.mode_enum)
+        log.debug(assembler_test.service_classes)
+        log.debug(assembler_test.custom_services)
         assert \
             assembler_test.custom_services['user'].config['config_mode'] \
                 == 'test'
 
     def test_config_mode_dev(self, assembler_dev: Assembler):
-        log.debug(assembler_dev.mode_enum)
         assert \
             assembler_dev.custom_services['user'].config['config_mode'] \
                 == 'dev'
