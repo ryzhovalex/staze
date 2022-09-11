@@ -196,6 +196,7 @@ class Assembler(Singleton):
         exists.
         """
         # First service to be initialized is always the App
+        log.debug(self._assemble_service_config('app'))
         self.app: App = App(
             mode_enum=mode_enum, host=host, port=port, 
             config=self._assemble_service_config('app'),
@@ -277,7 +278,6 @@ class Assembler(Singleton):
     def _run_test(self):
         log.info('Run tests')
         pytest.main(self.mode_args)
-        
 
     def _build_log(self) -> None:
         """Call chain to build log."""

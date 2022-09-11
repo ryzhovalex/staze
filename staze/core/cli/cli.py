@@ -35,6 +35,7 @@ class Cli():
                 has_to_run_app: bool = True
             ) -> Assembler:
         cli_input: CliInput = self._parse_input(args)
+        log.debug(cli_input.dict())
 
         match cli_input.mode_enum:
             case HelperAppModeEnum.VERSION:
@@ -76,7 +77,7 @@ class Cli():
                         'Mode `version` shouldn\'t be'
                         ' followed by any other arguments')
 
-                mode_kwargs['mode_enum'] = HelperAppModeEnum.VERSION
+                mode_enum_class = HelperAppModeEnum
                 check_other_args = False 
             case _:
                 try:
@@ -87,11 +88,12 @@ class Cli():
                     raise CLIError(
                         f'Unrecognized mode: {args[1]}')
 
-                # Create according enum with mode value
-                mode_kwargs['mode_enum'] = mode_enum_class(args[1])
+        # Create according enum with mode value
+        mode_kwargs['mode_enum'] = mode_enum_class(args[1])
 
         if check_other_args:
-            # Traverse other args
+            is_previous_flag: bool = False
+
             for ix, arg in enumerate(args[2:]):
                 ix = ix + 2
 
@@ -116,6 +118,7 @@ class Cli():
                                     host,
                                     r'^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}$')
                             mode_kwargs['host'] = host
+                            is_previous_flag = True
                     case '-p':
                         if not isinstance(
                                 mode_kwargs['mode_enum'], RunAppModeEnum):
@@ -135,6 +138,7 @@ class Cli():
                                     port,
                                     r'^\d+$')
                             mode_kwargs['port'] = port
+                            is_previous_flag = True
                     case '-x':
                         # Mode -x applicable to pytest flag and to dev and
                         # prod modes as additional functions executor
@@ -161,11 +165,26 @@ class Cli():
 
                             mode_kwargs['executable_func_names'].append(
                                 executable_func_names)
+                            is_previous_flag = True
                     case _:
-                        # In all other cases, write results to mode_args as it is,
-                        # this is required, e.g. in pytest as well as in all other
-                        # plugins and custom commands
-                        mode_kwargs['mode_args'].append(arg)
+                        if arg[0] == '-':
+                            raise CLIError(f'Unrecognized flag: {arg}')
+                        # If value not used by any flag,
+                        # e.g. `-h 0.0.0.0 value_without_flag`, raise exception
+                        # for run modes
+                        elif not is_previous_flag:
+                            if mode_enum_class is RunAppModeEnum:
+                                if \
+                                        mode_kwargs['mode_enum'] \
+                                            is not RunAppModeEnum.TEST:
+                                    raise CLIError(
+                                        'Values without flags is not '
+                                        'applicable to mode '
+                                        + mode_kwargs['mode_enum'].value
+                                    )
+                # Write all mode args as it is for extensions read,
+                # e.g. for pytest 
+                mode_kwargs['mode_args'].append(arg)
 
         return CliInput(**mode_kwargs)
 

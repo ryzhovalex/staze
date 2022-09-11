@@ -2,6 +2,7 @@ import sys
 from io import StringIO 
 
 from pytest import fixture
+from staze.core.app.app_mode_enum import RunAppModeEnum
 from staze.core.test.test import Test
 from staze.core.assembler.build import Build
 from staze.core.validation import validate_re
@@ -47,9 +48,34 @@ class TestCliExecute(Test):
         assert len(out) == 1
         validate_re(out[0], r'Staze \d+\.\d+\.\d+')
 
-    def test_dev(self, cli_blog: Cli):
-        with Capturing() as out:
-            assembler: Assembler = cli_blog.execute(
-                ['staze', 'dev'], has_to_run_app=False)
+    def test_test(self, cli_blog: Cli):
+        assembler: Assembler = cli_blog.execute(
+            ['staze', 'test'], has_to_run_app=False)
+        assert assembler.mode_enum.value == 'test'
 
+    def test_dev(self, cli_blog: Cli):
+        assembler: Assembler = cli_blog.execute(
+            ['staze', 'dev'], has_to_run_app=False)
         assert assembler.mode_enum.value == 'dev'
+
+    def test_prod(self, cli_blog: Cli):
+        assembler: Assembler = cli_blog.execute(
+            ['staze', 'prod'], has_to_run_app=False)
+        assert assembler.mode_enum.value == 'prod'
+
+    def test_host_port(self):
+        # assembler: Assembler = cli_blog.execute(
+        #     ['staze', 'dev', '-h', '0.0.0.0', '-p', '6000'], has_to_run_app=False)
+        # assert assembler.mode_enum.value == 'dev'
+        # assert assembler.app.host == '0.0.0.0'
+        # assert assembler.app.port == 6000
+        from staze.core.app.app import App
+        App.instance().__class__.instances = {}
+        app = App(
+            mode_enum=RunAppModeEnum.DEV,
+            host='0.0.0.0',
+            port=6000,
+            config={'root_dir': 'staze/tests/blog'},
+        )
+        log.debug(app.host)
+        assert False

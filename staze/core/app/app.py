@@ -52,8 +52,9 @@ class App(Service):
         self._mode_enum: AppModeEnumUnion = mode_enum
         self._root_dir: str = self.config['ROOT_DIR']
 
-        self.host = host
-        self.port = port
+        self._host = host
+        log.debug(self._host)
+        self._port = port
         self.native_app = self._spawn_native_app(self.config)
         self.native_app.config.from_mapping(self.config)
         self._enable_cors(self.config)
@@ -71,6 +72,14 @@ class App(Service):
             each_request_func=each_request_func,
             first_request_func=first_request_func
         )
+
+    @property
+    def host(self) -> str:
+        return self._host
+
+    @property
+    def port(self) -> int:
+        return self._port
 
     @property
     def mode(self) -> str:
