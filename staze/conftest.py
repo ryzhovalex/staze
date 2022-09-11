@@ -16,7 +16,6 @@ from staze.tests.blog.app.post.post_test import post_orm
 def blog_build() -> Build:
     build = _blog_build
     build.config_dir = 'configs'
-
     return build
 
 

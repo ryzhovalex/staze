@@ -95,10 +95,10 @@ class Assembler(Singleton):
 
         # Load env or use build default
         self.config_dir: str
-        env_config_dir = os.getenv('CONFIG_DIR')
+        env_config_dir = os.getenv('STAZE_CONFIG_DIR')
         if isinstance(env_config_dir, str) and env_config_dir:
             log.info(
-                f'Env CONFIG_DIR specified to {env_config_dir},'
+                f'Env STAZE_CONFIG_DIR specified to {env_config_dir},'
                 ' use it by default')
             self.config_dir = env_config_dir
         else:

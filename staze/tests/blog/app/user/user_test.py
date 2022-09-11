@@ -1,6 +1,6 @@
 import os
 from pytest import fixture
-from staze import Test
+from staze.core.test.test import Test
 from staze.core.app.app import App
 from staze.core.assembler.assembler import Assembler
 from staze.core.database.database import Database
