@@ -63,19 +63,11 @@ class TestCliExecute(Test):
             ['staze', 'prod'], has_to_run_app=False)
         assert assembler.mode_enum.value == 'prod'
 
-    def test_host_port(self):
-        # assembler: Assembler = cli_blog.execute(
-        #     ['staze', 'dev', '-h', '0.0.0.0', '-p', '6000'], has_to_run_app=False)
+    def test_host_port(self, cli_blog: Cli):
+        assembler: Assembler = cli_blog.execute(
+            ['staze', 'dev', '-h', '0.0.0.0', '-p', '6000'], has_to_run_app=False)
+        # FIXME: ...
         # assert assembler.mode_enum.value == 'dev'
         # assert assembler.app.host == '0.0.0.0'
         # assert assembler.app.port == 6000
-        from staze.core.app.app import App
-        App.instance().__class__.instances = {}
-        app = App(
-            mode_enum=RunAppModeEnum.DEV,
-            host='0.0.0.0',
-            port=6000,
-            config={'root_dir': 'staze/tests/blog'},
-        )
-        log.debug(app.host)
-        assert False
+        # assert False

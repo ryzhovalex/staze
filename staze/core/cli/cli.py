@@ -35,7 +35,6 @@ class Cli():
                 has_to_run_app: bool = True
             ) -> Assembler:
         cli_input: CliInput = self._parse_input(args)
-        log.debug(cli_input.dict())
 
         match cli_input.mode_enum:
             case HelperAppModeEnum.VERSION:

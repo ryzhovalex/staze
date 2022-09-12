@@ -27,14 +27,18 @@ class App(Service):
     """Core app's class.
     """
     def __init__(
-            self, 
-            config: dict,
-            mode_enum: AppModeEnumUnion,
-            host: str,
-            port: int,
-            ctx_processor_func: Callable | None = None,
-            each_request_func: Callable | None = None,
-            first_request_func: Callable | None = None) -> None:
+                self, 
+                config: dict,
+                mode_enum: AppModeEnumUnion,
+                host: str,
+                port: int,
+                ctx_processor_func: Callable | None = None,
+                each_request_func: Callable | None = None,
+                first_request_func: Callable | None = None
+            ) -> None:
+        self._host = host
+        self._port = port
+
         # Templates by default searched within src/app, which allows to
         # integrate them directly to their logical component's folders
         self.DEFAULT_TEMPLATE_PATH = os.path.join(
@@ -52,9 +56,6 @@ class App(Service):
         self._mode_enum: AppModeEnumUnion = mode_enum
         self._root_dir: str = self.config['ROOT_DIR']
 
-        self._host = host
-        log.debug(self._host)
-        self._port = port
         self.native_app = self._spawn_native_app(self.config)
         self.native_app.config.from_mapping(self.config)
         self._enable_cors(self.config)

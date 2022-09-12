@@ -196,13 +196,15 @@ class Assembler(Singleton):
         exists.
         """
         # First service to be initialized is always the App
-        log.debug(self._assemble_service_config('app'))
         self.app: App = App(
-            mode_enum=mode_enum, host=host, port=port, 
+            mode_enum=mode_enum,
+            host=host,
+            port=port, 
             config=self._assemble_service_config('app'),
             ctx_processor_func=self.ctx_processor_func,
             each_request_func=self.each_request_func,
-            first_request_func=self.first_request_func)
+            first_request_func=self.first_request_func
+        )
         layers_to_log: list[str] = []
 
         # Enable only modules with specified configs.
