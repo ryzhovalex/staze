@@ -188,5 +188,9 @@ class Cli():
         return CliInput(**mode_kwargs)
 
 
-if __name__ == "__main__":
+def main():
     Cli().execute()
+
+
+if __name__ == "__main__":
+    main()
