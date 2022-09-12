@@ -66,8 +66,11 @@ class TestCliExecute(Test):
     def test_host_port(self, cli_blog: Cli):
         assembler: Assembler = cli_blog.execute(
             ['staze', 'dev', '-h', '0.0.0.0', '-p', '6000'], has_to_run_app=False)
-        # FIXME: ...
-        # assert assembler.mode_enum.value == 'dev'
+        assert assembler.mode_enum.value == 'dev'
+        assert assembler.app.port == 6000
+
+        # FIXME:
+        #   In strange way app always receive '127.0.0.1' host,
+        #   and i don't know why.
+        #
         # assert assembler.app.host == '0.0.0.0'
-        # assert assembler.app.port == 6000
-        # assert False

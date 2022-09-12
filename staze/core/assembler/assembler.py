@@ -205,6 +205,7 @@ class Assembler(Singleton):
             each_request_func=self.each_request_func,
             first_request_func=self.first_request_func
         )
+        log.debug(self.app.host)
         layers_to_log: list[str] = []
 
         # Enable only modules with specified configs.
