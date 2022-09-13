@@ -4,10 +4,15 @@ from io import StringIO
 from pytest import fixture
 from staze.core.app.app_mode_enum import RunAppModeEnum
 from staze.core.assembler.assembler import Assembler
+from staze.core.assembler.assembler_error import (
+    NoDefinedExecutablesExecAssemblerError,
+    NoExecutableWithSuchNameExecAssemblerError)
 from staze.core.assembler.build import Build
 from staze.core.cli.cli import Cli
 from staze.core.cli.cli_error import (RedundantFlagCliError,
-                                      RedundantValueCliError)
+                                      RedundantValueCliError,
+                                      RepeatingArgCliError,
+                                      UncompatibleArgsCliError)
 from staze.core.database.database import Database
 from staze.core.log import log
 from staze.core.test.test import Test
@@ -63,7 +68,7 @@ class TestCliExecute(Test):
             cli_blog.execute(['staze', 'version', '-h', '0.0.0.0'])
         except (RedundantFlagCliError, SystemExit):
             return
-        except:
+        else:
             raise AssertionError(
                 'Executing "staze version" with additional flags should'
                 ' result in error'
@@ -123,10 +128,85 @@ class TestCliExecute(Test):
             user_orm: UserOrm = UserOrm.get_first()
             user_orm.check_password('helloworld')
 
-    def test_execute_on_run(self, cli_blog: Cli):
+    def test_execute_on_run_mode(self, cli_blog: Cli):
         assembler: Assembler = cli_blog.execute(
             ['staze', 'dev', '-x', 'add_user'],
             has_to_run_assembler=False,
             _has_to_recreate_migrations=True
         )
-        # CONTINUE
+        assert assembler.executables_to_execute == ['add_user']
+
+        assembler.run(_has_to_run_app=False)
+
+        with assembler.app.app_context():
+            user_orm: UserOrm = UserOrm.get_first()
+            user_orm.check_password('helloworld')
+
+    def test_execute_on_db_init_mode(self, cli_blog: Cli):
+        try:
+            assembler: Assembler = cli_blog.execute(
+                ['staze', 'init', '-x', 'add_user'],
+                has_to_run_assembler=False
+            )
+        except UncompatibleArgsCliError:
+            pass
+        else:
+            raise AssertionError(
+                'Execution on db init mode should result in'
+                ' UncompatibleArgsCliError'
+            )
+
+    def test_host_repeating(self, cli_blog: Cli):
+        try:
+            assembler: Assembler = cli_blog.execute(
+                ['staze', 'dev', '-h', '0.0.0.0', '-h', '127.0.0.1'],
+                has_to_run_assembler=False
+            )
+        except RepeatingArgCliError:
+            pass
+        else:
+            raise AssertionError(
+                'Repeating -h flag should result in RepeatingArgCliError'
+            )
+
+    def test_port_repeating(self, cli_blog: Cli):
+        try:
+            assembler: Assembler = cli_blog.execute(
+                ['staze', 'dev', '-p', '5001', '-p', '5002'],
+                has_to_run_assembler=False
+            )
+        except RepeatingArgCliError:
+            pass
+        else:
+            raise AssertionError(
+                'Repeating -p flag should result in RepeatingArgCliError'
+            )
+
+    def test_executable_repeating(self, cli_blog: Cli):
+        try:
+            assembler: Assembler = cli_blog.execute(
+                ['staze', 'dev', '-x', 'add_user', '-x', 'add_user'],
+                has_to_run_assembler=False
+            )
+        except RepeatingArgCliError:
+            pass
+        else:
+            raise AssertionError(
+                'Repeating -x flag should result in RepeatingArgCliError'
+            )
+
+    def test_exec_wrong_name(self, cli_blog: Cli):
+        assembler: Assembler = cli_blog.execute(
+            ['staze', 'exec', 'add_user123'],
+            has_to_run_assembler=False
+        )
+
+        try:
+            assembler.run(_has_to_run_app=False)
+        except NoExecutableWithSuchNameExecAssemblerError: 
+            pass
+        else:
+            raise AssertionError(
+                'Calling assembler with wrong executable name should result'
+                ' in ExecutableAssemblerError'
+            )

@@ -12,7 +12,7 @@ from staze.core.assembler.assembler import Assembler
 from staze.core.assembler.build import Build
 from staze.core.cli.cli_error import (CliError, NoMoreArgsCliError,
                                       RedundantFlagCliError,
-                                      RedundantValueCliError)
+                                      RedundantValueCliError, RepeatingArgCliError, UncompatibleArgsCliError)
 from staze.core.cli.cli_input import CliInput
 from staze.core.log import log
 from warepy import (get_enum_values, get_union_enum_values,
@@ -170,39 +170,47 @@ class Cli():
     def _parse_host(
             self, flag_index: int, cli_input_kwargs: dict
         ) -> int:
-        if '-h' in cli_input_kwargs:
-            raise CliError('Flag -h has been defined twice')
+        try:
+            cli_input_kwargs['host']
+        except KeyError:
+            pass
         else:
-            try:
-                host = self.args[flag_index+1]
-            except KeyError:
-                raise CliError(
-                    'No host specified for defined flag -h')
-            else:
-                # Pattern from: https://stackoverflow.com/a/36760050
-                validation.validate_re(
-                    host,
-                    r'^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}$')
-            cli_input_kwargs['host'] = host
-            return flag_index + 1 + 1
+            raise RepeatingArgCliError('Flag -h has been defined twice')
+        
+        try:
+            host = self.args[flag_index+1]
+        except KeyError:
+            raise CliError(
+                'No host specified for defined flag -h')
+        else:
+            # Pattern from: https://stackoverflow.com/a/36760050
+            validation.validate_re(
+                host,
+                r'^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}$')
+        cli_input_kwargs['host'] = host
+        return flag_index + 1 + 1
                         
     def _parse_port(
             self, flag_index: int, cli_input_kwargs: dict
         ) -> int:
-            if '-p' in cli_input_kwargs:
-                raise CliError('Flag -p has been defined twice')
+            try:
+                cli_input_kwargs['port']
+            except KeyError:
+                pass
             else:
-                try:
-                    port = self.args[flag_index+1]
-                except KeyError:
-                    raise CliError(
-                        'No port specified for defined flag -p')
-                else:
-                    validation.validate_re(
-                        port,
-                        r'^\d+$')
-                cli_input_kwargs['port'] = port
-                return flag_index + 1 + 1
+                raise RepeatingArgCliError('Flag -p has been defined twice')
+
+            try:
+                port = self.args[flag_index+1]
+            except KeyError:
+                raise CliError(
+                    'No port specified for defined flag -p')
+            else:
+                validation.validate_re(
+                    port,
+                    r'^\d+$')
+            cli_input_kwargs['port'] = port
+            return flag_index + 1 + 1
 
     def _parse_executables_to_execute(
             self, flag_index: int, cli_input_kwargs: dict
@@ -211,11 +219,15 @@ class Cli():
         # prod modes as additional functions executor
         executables_to_execute: list[str] = []
 
-        if '-x' in cli_input_kwargs:
-            raise CliError('Flag -x has been defined twice')
+        if len(cli_input_kwargs['executables_to_execute']) != 0:
+            raise RepeatingArgCliError('Flag -x has been defined twice')
+
+        if type(cli_input_kwargs['mode_enum']) is not RunAppModeEnum:
+            raise UncompatibleArgsCliError(
+                'Flag -x is only applicable to run app modes')
 
         # Iterate and add executables until face another flag
-        # e.g. in case "... -x exec1 exec2 exec3 -h 0.0.0.0"
+        # e.g. in case "staze dev -x exec1 exec2 exec3 -h 0.0.0.0"
         #
         # NOTE:
         #   Pytest is using -x flag too, but anyway such collection is

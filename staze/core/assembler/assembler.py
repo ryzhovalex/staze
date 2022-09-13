@@ -1,30 +1,30 @@
 from __future__ import annotations
-import os
-import sys
-import shutil
+
 import importlib.util
+import os
+import shutil
+import sys
 from typing import TYPE_CHECKING, Any, Callable, TypeVar
-from dotenv import load_dotenv
 
-from staze import __version__ as staze_version
-from warepy import (
-    format_message, load_yaml, get_enum_values, Singleton
-)
-from flask_socketio import SocketIO
 import pytest
-from staze.core.assembler.assembler_error import AssemblerError
-from staze.core.app.app_mode_enum import (
-    DatabaseAppModeEnum, RunAppModeEnum, AppModeEnumUnion, HelperAppModeEnum)
-from staze.core.error_handler import ErrorHandler
-
-from staze.core.socket.socket import Socket
-from staze.core.service.service import Service
-from staze.core.log import log
-from staze.core.error.error import Error
-from staze.core.model.config import Config
-
-from staze.core.database.database import Database
+from dotenv import load_dotenv
+from flask_socketio import SocketIO
+from staze import __version__ as staze_version
 from staze.core.app.app import App
+from staze.core.app.app_mode_enum import (AppModeEnumUnion,
+                                          DatabaseAppModeEnum,
+                                          HelperAppModeEnum, RunAppModeEnum)
+from staze.core.assembler.assembler_error import (
+    AssemblerError, NoDefinedExecutablesExecAssemblerError,
+    NoExecutableWithSuchNameExecAssemblerError)
+from staze.core.database.database import Database
+from staze.core.error.error import Error
+from staze.core.error_handler import ErrorHandler
+from staze.core.log import log
+from staze.core.model.config import Config
+from staze.core.service.service import Service
+from staze.core.socket.socket import Socket
+from warepy import Singleton, format_message, get_enum_values, load_yaml
 
 if TYPE_CHECKING:
     from .build import Build
@@ -267,16 +267,24 @@ class Assembler(Singleton):
             self.database.migrate_migration()
             self.database.upgrade_migration()
 
-    def run(self):
+    def run(self, _has_to_run_app: bool = True):
+        """Run built assembler.
+        """
         # Recreate migration for test purposes
         if self._has_to_recreate_migrations:
             self._recreate_migrations()
 
         if isinstance(self.mode_enum, RunAppModeEnum):
+            # Run executables in any case for run app mode enum
+            self._run_exec()
+
             if self.mode_enum is RunAppModeEnum.TEST:
                 self._run_test()
             else:
-                self._run_app()
+                if _has_to_run_app:
+                    self._run_app()
+                else:
+                    log.warning('App is not launched, according flag given')
         elif isinstance(self.mode_enum, HelperAppModeEnum):
             if self.mode_enum is HelperAppModeEnum.VERSION:
                 print(f"Staze {staze_version}")
@@ -303,38 +311,41 @@ class Assembler(Singleton):
         else:
             raise TypeError
 
-    def _run_exec(self):
-        if self.executables_to_execute:
-            if self.executables:
-                existing_executable_names: list[str] = [
-                    x.__name__ for x in self.executables
-                ]
-                for executable_name in self.executables_to_execute:
-                    if executable_name in existing_executable_names:
-                        executable: Callable = self._find_executable_by_name(
-                            executable_name)
-
-                        log.info(f'Execute {executable_name}')
-                        # TODO:
-                        #   Add context dictionary as first argument sent to
-                        #   executable
-                        
-                        with self.app.app_context():
-                            executable()
-                    else:
-                        raise AssemblerError(
-                            f'No defined executable for name {executable_name}'
-                            ' is found'
-                        )
-            else:
-                raise AssemblerError(
-                    'Executable names to execute given, but no defined'
-                    ' callable objects for them'
-                )
-
-        else:
+    def _run_exec(self) -> None:
+        if not self.executables_to_execute \
+                and self.mode_enum is HelperAppModeEnum.EXEC:
             raise AssemblerError(
                 'Mode is EXEC and no executables to execute is given'
+            )
+        elif not self.executables_to_execute:
+            # Do nothing if there is not execute order and mode is not EXEC
+            return
+
+        if self.executables:
+            defined_executable_names: list[str] = [
+                x.__name__ for x in self.executables
+            ]
+            for executable_name in self.executables_to_execute:
+                if executable_name in defined_executable_names:
+                    executable: Callable = self._find_executable_by_name(
+                        executable_name)
+
+                    log.info(f'Execute {executable_name}')
+                    # TODO:
+                    #   Add context dictionary as first argument sent to
+                    #   executable
+                    
+                    with self.app.app_context():
+                        executable()
+                else:
+                    raise NoExecutableWithSuchNameExecAssemblerError(
+                        f'No defined executable for name {executable_name}'
+                        ' is found'
+                    )
+        else:
+            raise NoDefinedExecutablesExecAssemblerError(
+                'Executable names to execute given, but no defined'
+                ' callable objects for them'
             )
 
     def _find_executable_by_name(self, name: str) -> Callable:
@@ -342,9 +353,11 @@ class Assembler(Singleton):
             for executable in self.executables:
                 if executable.__name__ == name:
                     return executable
-            raise AssemblerError(f'No executable with name {name} found')
+            raise NoDefinedExecutablesExecAssemblerError(
+                f'No executable with name {name} found')
         else:
-            raise AssemblerError('No executables are defined')
+            raise NoDefinedExecutablesExecAssemblerError(
+                'No executables are defined')
 
     def _run_shell(self):
         """Invoke app interactive shell."""
