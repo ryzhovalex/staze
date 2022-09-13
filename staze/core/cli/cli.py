@@ -9,7 +9,7 @@ from warepy import (
     get_enum_values, get_union_enum_values
 )
 from staze.core.assembler.build import Build
-from staze.core.cli.cli_error import CLIError, NoMoreArgsCliError
+from staze.core.cli.cli_error import CliError, NoMoreArgsCliError, VersionCliError
 from staze.core.log import log
 
 from staze import __version__ as staze_version
@@ -85,7 +85,6 @@ class Cli():
                 return assembler
 
     def _parse_input(self) -> CliInput:
-
         check_other_args: bool = True
         cli_input_kwargs: dict = {}
 
@@ -95,7 +94,7 @@ class Cli():
         match self.args[1]:
             case 'version':
                 if len(self.args) > 2:
-                    raise CLIError(
+                    raise VersionCliError(
                         'Mode `version` shouldn\'t be'
                         ' followed by any other arguments')
 
@@ -107,7 +106,7 @@ class Cli():
                     mode_enum_class = match_enum_containing_value(
                         self.args[1], *get_args(AppModeEnumUnion))
                 except ValueError:
-                    raise CLIError(
+                    raise CliError(
                         f'Unrecognized mode: {self.args[1]}')
 
         # Create according enum with mode value
@@ -116,11 +115,14 @@ class Cli():
         if check_other_args:
             # Searching starts from index 2 since first two elements is
             # "staze" and mode keyword
-            self._search_args(2, cli_input_kwargs)
+            try:
+                self._search_args(2, cli_input_kwargs)
+            except NoMoreArgsCliError:
+                pass
 
         return CliInput(**cli_input_kwargs)
 
-    def _search_args(self, next_index: int, cli_input_kwargs: dict) -> int:
+    def _search_args(self, next_index: int, cli_input_kwargs: dict) -> None:
         try:
             arg = self.args[next_index]
         except IndexError:
@@ -140,36 +142,25 @@ class Cli():
                 next_index = self._parse_executables(
                     next_index, cli_input_kwargs)
             case _:
-                if arg[0] == '-':
-                    raise CLIError(f'Unrecognized flag: {arg}')
-                # If a value not used by any flag,
-                # e.g. `-h 0.0.0.0 value_without_flag`, raise exception
-                # for run modes
-                elif not is_flag_previous:
-                    if mode_enum_class is RunAppModeEnum:
-                        if cli_input_kwargs['mode_enum'] \
-                                is not RunAppModeEnum.TEST:
-                            raise CLIError(
-                                'Values without flags is not '
-                                'applicable to mode '
-                                + cli_input_kwargs['mode_enum'].value
-                            )
+                raise CliError(f'Unrecognized flag: {arg}')
+
+        self._search_args(next_index, cli_input_kwargs)
 
     def _parse_host(
             self, flag_index: int, cli_input_kwargs: dict
         ) -> int:
         if not isinstance(
                 cli_input_kwargs['mode_enum'], RunAppModeEnum):
-            raise CLIError(
+            raise CliError(
                 'Flag -h applicable only to Run modes:'
                 f' {get_enum_values(RunAppModeEnum)}')
         elif '-h' in cli_input_kwargs:
-            raise CLIError('Flag -h has been defined twice')
+            raise CliError('Flag -h has been defined twice')
         else:
             try:
                 host = self.args[flag_index+1]
             except KeyError:
-                raise CLIError(
+                raise CliError(
                     'No host specified for defined flag -h')
             else:
                 # Pattern from: https://stackoverflow.com/a/36760050
@@ -177,7 +168,7 @@ class Cli():
                     host,
                     r'^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}$')
             cli_input_kwargs['host'] = host
-            return flag_index + 1
+            return flag_index + 1 + 1
                         
     def _parse_port(
             self, flag_index: int, cli_input_kwargs: dict
@@ -185,23 +176,23 @@ class Cli():
             if not isinstance(
                     cli_input_kwargs['mode_enum'], RunAppModeEnum
                 ):
-                raise CLIError(
+                raise CliError(
                     'Flag -p applicable only to Run modes:'
                     f' {get_enum_values(RunAppModeEnum)}')
             elif '-p' in cli_input_kwargs:
-                raise CLIError('Flag -p has been defined twice')
+                raise CliError('Flag -p has been defined twice')
             else:
                 try:
                     port = self.args[flag_index+1]
                 except KeyError:
-                    raise CLIError(
+                    raise CliError(
                         'No port specified for defined flag -p')
                 else:
                     validation.validate_re(
                         port,
                         r'^\d+$')
                 cli_input_kwargs['port'] = port
-                return flag_index + 1
+                return flag_index + 1 + 1
 
     def _parse_executables(
             self, flag_index: int, cli_input_kwargs: dict
@@ -212,9 +203,11 @@ class Cli():
 
         if not isinstance(
                 cli_input_kwargs['mode_enum'], RunAppModeEnum):
-            raise CLIError(
+            raise CliError(
                 'Flag -x can only be used with run modes:'
                 f' {get_enum_values(RunAppModeEnum)}') 
+        elif '-x' in cli_input_kwargs:
+            raise CliError('Flag -x has been defined twice')
 
         # Iterate and add executables until face another flag
         # e.g. in case "... -x exec1 exec2 exec3 -h 0.0.0.0"
@@ -230,7 +223,7 @@ class Cli():
             executables.append(name)
 
         if executables == []:
-            raise CLIError(
+            raise CliError(
                 'No executables specified for flag -x')
 
         cli_input_kwargs['executables'].append(

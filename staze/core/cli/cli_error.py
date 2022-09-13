@@ -1,7 +1,6 @@
 from staze.core.error.error import Error
 
 
-class CLIError(Error): pass
-
-
-class NoMoreArgsCliError(CLIError): pass
+class CliError(Error): pass
+class NoMoreArgsCliError(CliError): pass
+class VersionCliError(CliError): pass

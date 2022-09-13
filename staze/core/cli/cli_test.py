@@ -3,6 +3,7 @@ from io import StringIO
 
 from pytest import fixture
 from staze.core.app.app_mode_enum import RunAppModeEnum
+from staze.core.cli.cli_error import VersionCliError
 from staze.core.test.test import Test
 from staze.core.assembler.build import Build
 from staze.core.validation import validate_re
@@ -37,7 +38,7 @@ def cli_blog(blog_root_dir: str, blog_build: Build):
 
 
 class TestCliExecute(Test):
-    def test_default(self, cli: Cli):
+    def test_version(self, cli: Cli):
         with Capturing() as out:
             try:
                 cli.execute(['staze', 'version'])
@@ -47,6 +48,17 @@ class TestCliExecute(Test):
                 raise AssertionError('')
         assert len(out) == 1
         validate_re(out[0], r'Staze \d+\.\d+\.\d+')
+
+    def test_version_redundant_arguments(self, cli: Cli):
+        try:
+            cli.execute(['staze', 'version', 'hello'])
+        except VersionCliError:
+            return
+        else:
+            raise AssertionError(
+                'Executing "staze version" with additional arguments should'
+                ' result in error'
+            )
 
     def test_test(self, cli_blog: Cli):
         assembler: Assembler = cli_blog.execute(
