@@ -6,7 +6,7 @@ from staze.core.assembler.build import Build
 from staze.core.app.app_mode_enum import RunAppModeEnum
 from staze.core.app.app import App
 from staze.core.database.database import Database
-from staze.core.log import log
+from staze.core.log.log import log
 from staze.core.test.test import Test
 from staze.tests.blog.app.user.user_service import UserService
 

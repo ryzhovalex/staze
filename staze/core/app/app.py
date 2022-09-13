@@ -11,12 +11,12 @@ from flask.testing import FlaskClient
 from staze.core import validation
 from staze.core.app.app_mode_enum import (
     RunAppModeEnum, HelperAppModeEnum, DatabaseAppModeEnum, AppModeEnumUnion)
-from staze.core.log import log
+from staze.core.log.log import log
 from flask import Flask
 from flask import cli as flask_cli
 from flask.ctx import AppContext, RequestContext
 from warepy import get_enum_values
-from staze.core.log import log
+from staze.core.log.log import log
 
 from staze.core.service.service import Service
 from staze.core.view.view import View

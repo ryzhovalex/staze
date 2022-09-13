@@ -1,7 +1,7 @@
 from pytest import fixture
 from staze.core.model.model import Model
 from staze.core.test.mock import Mock
-from staze.core.log import log
+from staze.core.log.log import log
 
 
 class CustomModel(Model):

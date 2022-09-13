@@ -9,7 +9,7 @@ from staze.core.assembler.assembler_test import (
     assembler_test, assembler_dev, assembler_prod)
 from staze.core.app.app_test import app
 from staze.core.database.database_test import db
-from staze.core.log import log
+from staze.core.log.log import log
 from staze.tests.blog.app.user.user_test import user_orm
 from staze.tests.blog.app.post.post_test import post_orm
 

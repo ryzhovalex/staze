@@ -2,7 +2,7 @@ from pytest import fixture
 from staze.core.app.app import App
 
 from staze.core.database.database import Database
-from staze.core.log import log
+from staze.core.log.log import log
 
 
 @fixture

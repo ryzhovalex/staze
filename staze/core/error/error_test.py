@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from pytest import fixture
 from staze.core.error.error import Error
 from staze.core.test.mock import Mock
-from staze.core.log import log
+from staze.core.log.log import log
 from staze.core import parsing
 
 

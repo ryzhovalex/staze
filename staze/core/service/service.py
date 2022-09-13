@@ -1,5 +1,5 @@
 from warepy import Singleton
-from staze.core.log import log
+from staze.core.log.log import log
 
 
 class Service(Singleton):

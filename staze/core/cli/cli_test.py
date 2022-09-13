@@ -14,7 +14,7 @@ from staze.core.cli.cli_error import (RedundantFlagCliError,
                                       RepeatingArgCliError,
                                       UncompatibleArgsCliError)
 from staze.core.database.database import Database
-from staze.core.log import log
+from staze.core.log.log import log
 from staze.core.test.test import Test
 from staze.core.validation import validate_re
 from staze.tests.blog.app.user.user_orm import UserOrm

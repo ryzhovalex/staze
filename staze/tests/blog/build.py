@@ -17,7 +17,7 @@ from staze.tests.blog.app.user.user_service import UserService
 
 def add_user():
     from staze.tests.blog.app.user.user_orm import UserOrm
-    from staze.core.log import log
+    from staze.core.log.log import log
 
     username: str = secrets.token_hex(16)
     log.info(f'Add user {username}')

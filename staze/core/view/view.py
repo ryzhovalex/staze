@@ -2,7 +2,7 @@ import re
 
 from flask.views import MethodView
 from warepy import Singleton, format_message
-from staze.core.log import log
+from staze.core.log.log import log
 
 from staze.core.noconflict import makecls
 

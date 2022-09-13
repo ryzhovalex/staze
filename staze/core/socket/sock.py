@@ -1,7 +1,7 @@
 from typing import Callable
 
 from flask_socketio import SocketIO, Namespace
-from staze.core.log import log
+from staze.core.log.log import log
 
 from .socket import Socket
 from .default_sock_error_handler import default_sock_error_handler

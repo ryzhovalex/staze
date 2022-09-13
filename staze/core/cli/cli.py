@@ -14,7 +14,7 @@ from staze.core.cli.cli_error import (CliError, NoMoreArgsCliError,
                                       RedundantFlagCliError,
                                       RedundantValueCliError, RepeatingArgCliError, UncompatibleArgsCliError)
 from staze.core.cli.cli_input import CliInput
-from staze.core.log import log
+from staze.core.log.log import log
 from warepy import (get_enum_values, get_union_enum_values,
                     match_enum_containing_value)
 

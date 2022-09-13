@@ -1,6 +1,7 @@
-path: ./var/logs/system.log
+layer: ecs
+path: ./var/logs/app.log
 level: DEBUG
 format: "\\{time:%Y.%m.%d at %H:%M:%S:%f%z} | \\{level} | \\{extra} >> \\{message}"
 rotation: 10 MB
-serialize: false
+serialize: true
 delete_old: false

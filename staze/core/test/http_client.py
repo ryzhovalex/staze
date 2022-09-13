@@ -2,7 +2,7 @@ import inspect
 from typing import Callable
 from werkzeug.test import TestResponse
 from staze.core import validation, parsing
-from staze.core.log import log
+from staze.core.log.log import log
 from flask.testing import FlaskClient
 
 

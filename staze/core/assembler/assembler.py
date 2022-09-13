@@ -20,7 +20,7 @@ from staze.core.assembler.assembler_error import (
 from staze.core.database.database import Database
 from staze.core.error.error import Error
 from staze.core.error_handler import ErrorHandler
-from staze.core.log import log
+from staze.core.log.log import log
 from staze.core.model.config import Config
 from staze.core.service.service import Service
 from staze.core.socket.socket import Socket
@@ -375,7 +375,8 @@ class Assembler(Singleton):
         # Try to find log config cell and build log class from it
         if self.config_classes:
             try:
-                log_config_class = Config.find_by_name("log", self.config_classes)
+                log_config_class = Config.find_by_name(
+                    "log", self.config_classes)
             except ValueError:
                 log_config = None
             else:

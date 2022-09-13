@@ -4,7 +4,7 @@ from flask_socketio import (
     SocketIO, send, emit, join_room, leave_room, SocketIOTestClient)
 
 from staze.core.service.service import Service
-from staze.core.log import log
+from staze.core.log.log import log
 
 if TYPE_CHECKING:
     from staze.core.app.app import App

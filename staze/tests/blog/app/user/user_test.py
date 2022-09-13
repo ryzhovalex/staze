@@ -6,7 +6,7 @@ from staze.core.assembler.assembler import Assembler
 from staze.core.database.database import Database
 from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
-from staze.core.log import log
+from staze.core.log.log import log
 from staze.core.test.http_client import HttpClient
 from staze.tests.blog.app.user.user_orm import UserOrm
 from staze.tests.blog.app.user.user_service import UserService

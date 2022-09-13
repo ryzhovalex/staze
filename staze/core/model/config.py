@@ -11,7 +11,7 @@ from staze.core.app.app_mode_enum import AppModeEnumUnion, RunAppModeEnum
 from staze.core.assembler.assembler_error import AssemblerError
 from ..assembler.config_extension_enum import ConfigExtensionEnum
 from staze.core.model.model import Model
-from staze.core.log import log
+from staze.core.log.log import log
 
 
 class Config(Model):

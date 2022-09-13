@@ -1,7 +1,7 @@
 from dataclasses import dataclass, fields
 from typing import Any, Iterable
 import types
-from staze.core.log import log
+from staze.core.log.log import log
 from typing import ClassVar
 from warepy import snakefy
 from pydantic import BaseModel
