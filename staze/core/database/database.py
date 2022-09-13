@@ -318,7 +318,9 @@ class Database(Service):
             is_sqlite_database = True
         else:
             is_sqlite_database = False
-        self.migration = flask_migrate.Migrate(flask_app, self.native_database, render_as_batch=is_sqlite_database)
+        self.migration = flask_migrate.Migrate(
+            flask_app, self.native_database, render_as_batch=is_sqlite_database
+        )
 
     def get_native_database(self) -> SQLAlchemy:
         return self.native_database

@@ -1,10 +1,12 @@
 from __future__ import annotations
 import os
 import sys
+import shutil
 import importlib.util
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 from dotenv import load_dotenv
 
+from staze import __version__ as staze_version
 from warepy import (
     format_message, load_yaml, get_enum_values, Singleton
 )
@@ -51,17 +53,23 @@ class Assembler(Singleton):
             Root dir to execute project from. Defaults to `os.getcwd()`.
             Required in cases of calling this function not from actual
             project root (e.g. from tests) to set root path explicitly.
+        executables_to_execute (optional):
+            List of string objects which callable objects with the same name
+            has to be presented in build.executables to be called
     """
     def __init__(
             self, 
             mode_enum: AppModeEnumUnion,
-            mode_args: list[str] = [],
+            cli_args: list[str] | None = None,
             source_filename: str = 'build',
             build: Build | None = None,
             host: str = 'localhost',
             port: int = 5000,
             root_dir: str = os.getcwd(),
-            extra_configs_by_name: dict[str, Any] | None = None) -> None:
+            extra_configs_by_name: dict[str, Any] | None = None,
+            executables_to_execute: list[str] | None = None,
+            _has_to_recreate_migrations: bool = False
+        ) -> None:
         # Define attributes for getter methods to be used at builder
         # Do not set extra_configs_by_name to None at initialization, because
         # `get()` method called from this dictionary
@@ -69,7 +77,12 @@ class Assembler(Singleton):
         self.root_dir = root_dir
         self.socket_enabled: bool = False
         self.mode_enum: AppModeEnumUnion = mode_enum
-        self.mode_args: list[str] = mode_args
+        self.cli_args = cli_args
+        self.executables_to_execute = executables_to_execute
+
+        # On assembler.run() re-init of migrations with removing of migrations
+        # folder will be done
+        self._has_to_recreate_migrations: bool = _has_to_recreate_migrations
 
         # Load build from module
         if build:
@@ -88,6 +101,7 @@ class Assembler(Singleton):
         self.each_request_func = self.build.each_request_func
         self.first_request_func = self.build.first_request_func
         self.sock_classes = self.build.sock_classes
+        self.executables = self.build.executables
 
         self.default_error_handler = self.build.default_error_handler
         self.default_builtin_error_hanlder = \
@@ -205,17 +219,16 @@ class Assembler(Singleton):
             each_request_func=self.each_request_func,
             first_request_func=self.first_request_func
         )
-        log.debug(self.app.host)
         layers_to_log: list[str] = []
 
         # Enable only modules with specified configs.
-        # TODO:
-        #   Instead of catching ValueError, which could be anything, make
-        #   own custom error inside find_by_name()
         if self.config_classes:
             try:
                 Config.find_by_name('database', self.config_classes)
             except ValueError:
+                # TODO:
+                #   Instead of catching ValueError, which could be anything,
+                #   make own custom error inside find_by_name()
                 pass
             else:
                 self.database: Database = Database(
@@ -241,18 +254,37 @@ class Assembler(Singleton):
     def _build_builtin_helpers(self) -> None:
         self._build_error_handler()
 
+    def _recreate_migrations(self):
+        with self.app.app_context():
+            # Default folder "migrations" is removed by default. I think there
+            # is no need to specify additional variable for that, since it's
+            # only intended for specific use cases, e.g. staze self testing
+            try:
+                shutil.rmtree('migrations')
+            except FileNotFoundError:
+                pass
+            self.database.init_migration()
+            self.database.migrate_migration()
+            self.database.upgrade_migration()
+
     def run(self):
+        # Recreate migration for test purposes
+        if self._has_to_recreate_migrations:
+            self._recreate_migrations()
+
         if isinstance(self.mode_enum, RunAppModeEnum):
             if self.mode_enum is RunAppModeEnum.TEST:
                 self._run_test()
             else:
                 self._run_app()
         elif isinstance(self.mode_enum, HelperAppModeEnum):
-            if self.mode_enum is HelperAppModeEnum.SHELL:
+            if self.mode_enum is HelperAppModeEnum.VERSION:
+                print(f"Staze {staze_version}")
+                exit()
+            elif self.mode_enum is HelperAppModeEnum.SHELL:
                 self._run_shell()
-            elif self.mode_enum is HelperAppModeEnum.CMD: 
-                # TODO: Custom cmds after assembler build operations.
-                raise NotImplementedError
+            elif self.mode_enum is HelperAppModeEnum.EXEC: 
+                self._run_exec()
             elif self.mode_enum is HelperAppModeEnum.DEPLOY:
                 # TODO: Implement deploy operation.
                 raise NotImplementedError
@@ -271,6 +303,49 @@ class Assembler(Singleton):
         else:
             raise TypeError
 
+    def _run_exec(self):
+        if self.executables_to_execute:
+            if self.executables:
+                existing_executable_names: list[str] = [
+                    x.__name__ for x in self.executables
+                ]
+                for executable_name in self.executables_to_execute:
+                    if executable_name in existing_executable_names:
+                        executable: Callable = self._find_executable_by_name(
+                            executable_name)
+
+                        log.info(f'Execute {executable_name}')
+                        # TODO:
+                        #   Add context dictionary as first argument sent to
+                        #   executable
+                        
+                        with self.app.app_context():
+                            executable()
+                    else:
+                        raise AssemblerError(
+                            f'No defined executable for name {executable_name}'
+                            ' is found'
+                        )
+            else:
+                raise AssemblerError(
+                    'Executable names to execute given, but no defined'
+                    ' callable objects for them'
+                )
+
+        else:
+            raise AssemblerError(
+                'Mode is EXEC and no executables to execute is given'
+            )
+
+    def _find_executable_by_name(self, name: str) -> Callable:
+        if self.executables:
+            for executable in self.executables:
+                if executable.__name__ == name:
+                    return executable
+            raise AssemblerError(f'No executable with name {name} found')
+        else:
+            raise AssemblerError('No executables are defined')
+
     def _run_shell(self):
         """Invoke app interactive shell."""
         self.app.run_shell()
@@ -280,7 +355,7 @@ class Assembler(Singleton):
 
     def _run_test(self):
         log.info('Run tests')
-        pytest.main(self.mode_args)
+        pytest.main(self.cli_args)
 
     def _build_log(self) -> None:
         """Call chain to build log."""

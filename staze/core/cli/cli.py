@@ -1,23 +1,22 @@
 import os
 import re
 import sys
-import pytest
 from typing import get_args
 
-from warepy import (
-    match_enum_containing_value,
-    get_enum_values, get_union_enum_values
-)
-from staze.core.assembler.build import Build
-from staze.core.cli.cli_error import CliError, NoMoreArgsCliError, VersionCliError
-from staze.core.log import log
-
-from staze import __version__ as staze_version
+import pytest
+from staze.core import parsing, validation
+from staze.core.app.app_mode_enum import (AppModeEnumUnion,
+                                          DatabaseAppModeEnum,
+                                          HelperAppModeEnum, RunAppModeEnum)
 from staze.core.assembler.assembler import Assembler
-from staze.core import validation, parsing
-from staze.core.app.app_mode_enum import (
-    RunAppModeEnum, DatabaseAppModeEnum, HelperAppModeEnum, AppModeEnumUnion)
+from staze.core.assembler.build import Build
+from staze.core.cli.cli_error import (CliError, NoMoreArgsCliError,
+                                      RedundantFlagCliError,
+                                      RedundantValueCliError)
 from staze.core.cli.cli_input import CliInput
+from staze.core.log import log
+from warepy import (get_enum_values, get_union_enum_values,
+                    match_enum_containing_value)
 
 
 class Cli():
@@ -30,10 +29,16 @@ class Cli():
         self.root_dir = root_dir
         self.args: list[str] = []
 
+        # Whether to check following flags or values. If false, raise error if
+        # following flag/value is occured
+        self._has_to_check_following_flags: bool = True
+        self._has_to_check_following_values: bool = True
+
     def execute(
                 self,
                 args: list[str] | None = None,
-                has_to_run_app: bool = True
+                has_to_run_assembler: bool = True,
+                _has_to_recreate_migrations: bool = False
             ) -> Assembler:
         """Execute args list as cli would do.
         
@@ -43,7 +48,7 @@ class Cli():
             args:
                 List of each command, e.g. command "staze dev -h 0.0.0.0"
                 will look like ['staze', 'dev', '-h', '0.0.0.0'].
-            has_to_run_app:
+            has_to_run_assembler:
                 Whether app should be run right after configuration. Defaults
                 to True.
         """
@@ -59,66 +64,65 @@ class Cli():
 
         cli_input: CliInput = self._parse_input()
 
-        match cli_input.mode_enum:
-            case HelperAppModeEnum.VERSION:
-                print(f"Staze {staze_version}")
-                exit()
-            case _:
-                root_dir: str
-                if self.root_dir:
-                    root_dir = self.root_dir
-                else:
-                    root_dir = os.getcwd()
+        root_dir: str
+        if self.root_dir:
+            root_dir = self.root_dir
+        else:
+            root_dir = os.getcwd()
 
-                # Create and build assembler
-                assembler = Assembler(
-                    mode_enum=cli_input.mode_enum,
-                    mode_args=cli_input.args,
-                    host=cli_input.host,
-                    port=cli_input.port,
-                    root_dir=root_dir,
-                    build=self.build)
+        # Create and build assembler
+        assembler = Assembler(
+            mode_enum=cli_input.mode_enum,
+            cli_args=cli_input.args,
+            host=cli_input.host,
+            port=cli_input.port,
+            root_dir=root_dir,
+            build=self.build, 
+            executables_to_execute=cli_input.executables_to_execute,
+            _has_to_recreate_migrations=_has_to_recreate_migrations
+        )
 
-                if has_to_run_app:
-                    assembler.run()
+        if has_to_run_assembler:
+            assembler.run()
 
-                return assembler
+        return assembler
 
     def _parse_input(self) -> CliInput:
-        check_other_args: bool = True
         cli_input_kwargs: dict = {}
 
         # Useful for third-party extension to read from, e.g. for pytest
         cli_input_kwargs['args'] = self.args
+        cli_input_kwargs['executables_to_execute'] = []
 
         match self.args[1]:
             case 'version':
-                if len(self.args) > 2:
-                    raise VersionCliError(
-                        'Mode `version` shouldn\'t be'
-                        ' followed by any other arguments')
-
-                mode_enum_class = HelperAppModeEnum
-                check_other_args = False 
+                ModeEnumClass = HelperAppModeEnum
+                self._has_to_check_following_flags = False 
+                self._has_to_check_following_values = False
+            case 'exec':
+                ModeEnumClass = HelperAppModeEnum
+                self._has_to_check_following_flags = False 
+                self._has_to_check_following_values = True
             case _:
                 try:
                     # Find enum where mode assigned
-                    mode_enum_class = match_enum_containing_value(
+                    ModeEnumClass = match_enum_containing_value(
                         self.args[1], *get_args(AppModeEnumUnion))
                 except ValueError:
                     raise CliError(
                         f'Unrecognized mode: {self.args[1]}')
 
         # Create according enum with mode value
-        cli_input_kwargs['mode_enum'] = mode_enum_class(self.args[1])
+        cli_input_kwargs['mode_enum'] = ModeEnumClass(self.args[1])
 
-        if check_other_args:
-            # Searching starts from index 2 since first two elements is
-            # "staze" and mode keyword
-            try:
-                self._search_args(2, cli_input_kwargs)
-            except NoMoreArgsCliError:
-                pass
+        # Searching starts from index 2 since first two elements is
+        # "staze" and mode keyword. Searching starts in any case, even if it's
+        # not required (e.g. mode "version" already picked) to find possible
+        # mistakes and raise error for that
+        try:
+            self._search_args(2, cli_input_kwargs)
+        except NoMoreArgsCliError:
+            pass
 
         return CliInput(**cli_input_kwargs)
 
@@ -139,22 +143,34 @@ class Cli():
             case '-p':
                 next_index = self._parse_port(next_index, cli_input_kwargs)
             case '-x':
-                next_index = self._parse_executables(
+                next_index = self._parse_executables_to_execute(
                     next_index, cli_input_kwargs)
             case _:
-                raise CliError(f'Unrecognized flag: {arg}')
+                if arg[0] == '-' and not self._has_to_check_following_flags:
+                    raise RedundantFlagCliError()
+                elif arg[0] != '-' and not self._has_to_check_following_values:
+                    raise RedundantValueCliError()
+                # i.e. value which wanted to be saved, e.g. for "exec" mode
+                # which doesn't accept flags, but only values
+                else:
+                    if cli_input_kwargs['mode_enum'] is HelperAppModeEnum.EXEC:
+                        cli_input_kwargs['executables_to_execute'].append(
+                            arg
+                        )
+                        next_index += 1
+                    else:
+                        raise CliError(
+                            'Additional cli values is requested, but no'
+                            ' mode logic is presented to handle them'
+                            f' (occured for argument {arg})'
+                        )
 
         self._search_args(next_index, cli_input_kwargs)
 
     def _parse_host(
             self, flag_index: int, cli_input_kwargs: dict
         ) -> int:
-        if not isinstance(
-                cli_input_kwargs['mode_enum'], RunAppModeEnum):
-            raise CliError(
-                'Flag -h applicable only to Run modes:'
-                f' {get_enum_values(RunAppModeEnum)}')
-        elif '-h' in cli_input_kwargs:
+        if '-h' in cli_input_kwargs:
             raise CliError('Flag -h has been defined twice')
         else:
             try:
@@ -173,13 +189,7 @@ class Cli():
     def _parse_port(
             self, flag_index: int, cli_input_kwargs: dict
         ) -> int:
-            if not isinstance(
-                    cli_input_kwargs['mode_enum'], RunAppModeEnum
-                ):
-                raise CliError(
-                    'Flag -p applicable only to Run modes:'
-                    f' {get_enum_values(RunAppModeEnum)}')
-            elif '-p' in cli_input_kwargs:
+            if '-p' in cli_input_kwargs:
                 raise CliError('Flag -p has been defined twice')
             else:
                 try:
@@ -194,19 +204,14 @@ class Cli():
                 cli_input_kwargs['port'] = port
                 return flag_index + 1 + 1
 
-    def _parse_executables(
+    def _parse_executables_to_execute(
             self, flag_index: int, cli_input_kwargs: dict
         ) -> int:
         # Mode -x applicable to pytest flag and to dev and
         # prod modes as additional functions executor
-        executables: list[str] = []
+        executables_to_execute: list[str] = []
 
-        if not isinstance(
-                cli_input_kwargs['mode_enum'], RunAppModeEnum):
-            raise CliError(
-                'Flag -x can only be used with run modes:'
-                f' {get_enum_values(RunAppModeEnum)}') 
-        elif '-x' in cli_input_kwargs:
+        if '-x' in cli_input_kwargs:
             raise CliError('Flag -x has been defined twice')
 
         # Iterate and add executables until face another flag
@@ -220,17 +225,16 @@ class Cli():
         for name in self.args[flag_index+1:]:
             if '-' in name:
                 break
-            executables.append(name)
+            executables_to_execute.append(name)
 
-        if executables == []:
+        if executables_to_execute == []:
             raise CliError(
                 'No executables specified for flag -x')
 
-        cli_input_kwargs['executables'].append(
-            executables)
+        cli_input_kwargs['executables_to_execute'] = executables_to_execute
         # Return index of the next flag counting amount of added cli
         # arguments
-        return flag_index + len(executables) + 1
+        return flag_index + len(executables_to_execute) + 1
 
 
 def main():

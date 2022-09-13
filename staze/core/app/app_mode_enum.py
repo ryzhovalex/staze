@@ -18,9 +18,7 @@ class HelperAppModeEnum(Enum):
     SHELL = 'shell'
     DEPLOY = 'deploy'
     VERSION = 'version'
-
-    # Custom cmds
-    CMD = 'cmd'
+    EXEC = 'exec'
 
 
 AppModeEnumUnion = DatabaseAppModeEnum | RunAppModeEnum | HelperAppModeEnum

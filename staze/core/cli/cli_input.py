@@ -8,4 +8,4 @@ class CliInput(Model):
     args: list[str]
     host: str = '127.0.0.1'
     port: int = 5000
-    executables: list[Callable] = []
+    executables_to_execute: list[str] = []

@@ -48,23 +48,28 @@ class Build:
         first_request_func (optional):
             Callable to be called on Flask.before_first_request.
             Defaults to None
+        executables (optional):
+            List with callable objects to be able to be executed via "exec" 
+            coammand or with "-x" flag. Defaults to None
     """
     def __init__(
-            self,
-            *,
-            version: str = '0.0.0',
-            env_path: str = '.env',
-            config_dir: str = './src/configs',
-            service_classes: list[type[Service]] = [],
-            view_classes: list[type[View]] = [],
-            shell_processors: list[Callable] = [],
-            sock_classes: list[type[Sock]] = [],
-            default_error_handler: Callable | None = None,
-            default_builtin_error_handler: Callable | None = \
-                None,
-            ctx_processor_func: Callable | None = None,
-            each_request_func: Callable | None = None,
-            first_request_func: Callable | None = None) -> None:
+                self,
+                *,
+                version: str = '0.0.0',
+                env_path: str = '.env',
+                config_dir: str = './src/configs',
+                service_classes: list[type[Service]] = [],
+                view_classes: list[type[View]] = [],
+                shell_processors: list[Callable] = [],
+                sock_classes: list[type[Sock]] = [],
+                default_error_handler: Callable | None = None,
+                default_builtin_error_handler: Callable | None = \
+                    None,
+                ctx_processor_func: Callable | None = None,
+                each_request_func: Callable | None = None,
+                first_request_func: Callable | None = None,
+                executables: list[Callable] | None = None
+            ) -> None:
         self.version = version
         self.env_path = env_path
         self.config_dir = config_dir
@@ -77,6 +82,7 @@ class Build:
         self.sock_classes = sock_classes
         self.default_error_handler = default_error_handler
         self.default_builtin_error_handler = default_builtin_error_handler
+        self.executables = executables
 
     def build_app(
             self,
