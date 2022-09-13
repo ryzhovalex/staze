@@ -5,6 +5,7 @@ import sys
 import secrets
 
 from staze.core.database.database import Database
+from staze.tests.blog.app.user.user_view import UsersIdView
 
 # Add parent dir of app's dir
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -31,6 +32,7 @@ service_classes: list[type[Service]] = [
 ]
 
 view_classes: list[type[View]] = [
+    UsersIdView
 ]
 
 build = Build(

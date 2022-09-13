@@ -48,12 +48,17 @@ class View(MethodView):
         route_pieces: list[str] = cls.ROUTE.split('/')
 
         for piece in route_pieces:
+            if piece == '':
+                continue
+
             if re.match(r'\<.+\>', piece):
                 # Remove arrows around route, so /user/<id> transforms to
                 # user.id
-                res_route += piece[1:len(piece)-2]
+                res_route += piece[1:len(piece)-1]
             else:
                 res_route += piece
+            res_route += '.'
 
-        return res_route
+        # Don't include last dot
+        return res_route[:len(res_route)-1]
 

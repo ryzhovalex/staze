@@ -11,6 +11,8 @@ class Ecs(Layer):
         record = message.record
 
         record_extra: dict = {}
+
+        self._populate_with_request_context(record_extra)
         
         client_ip: str | None = None
         url_full: str | None = None

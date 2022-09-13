@@ -47,7 +47,7 @@ class ErrorHandler(Singleton):
                 error_code=err.status_code
                 ) \
             .error(
-                f'Error {err.__class__.__name__}'
+                f'{err.__class__.__name__}'
                 f' {err.status_code}: {err.message}'
                 )
         return err.expose(), err.status_code
@@ -55,4 +55,5 @@ class ErrorHandler(Singleton):
     def _handle_builtin_error_default(self, err: Exception):
         # Log builtin exceptions in any case, so Error.SHOULD_BE_LOGGED are set
         # by default to True and not changed here
-        return self._handle_error_default(Error('; '.join(err.args), 400))
+        return self._handle_error_default(
+            Error('; '.join([err.__class__.__name__, *err.args]), 400))

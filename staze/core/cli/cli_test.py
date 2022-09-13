@@ -48,11 +48,11 @@ def cli_blog(blog_root_dir: str, blog_build: Build):
         assembler.__class__.instances = {}
 
 
-class TestCliExecute(Test):
+class TestCliExecute:
     def test_version(self, cli_blog: Cli):
         with Capturing() as out:
             try:
-                cli_blog.execute(['staze', 'version'])
+                cli_blog.execute(['staze', 'version'], _is_self_test=True)
             except SystemExit:
                 pass
             else:
@@ -65,7 +65,10 @@ class TestCliExecute(Test):
 
     def test_version_redundant_flag(self, cli_blog: Cli):
         try:
-            cli_blog.execute(['staze', 'version', '-h', '0.0.0.0'])
+            cli_blog.execute(
+                ['staze', 'version', '-h', '0.0.0.0'],
+                _is_self_test=True
+                )
         except (RedundantFlagCliError, SystemExit):
             return
         else:
@@ -76,7 +79,7 @@ class TestCliExecute(Test):
 
     def test_version_redundant_value(self, cli_blog: Cli):
         try:
-            cli_blog.execute(['staze', 'version', 'hello'])
+            cli_blog.execute(['staze', 'version', 'hello'], _is_self_test=True)
         except (RedundantValueCliError, SystemExit):
             return
         else:
@@ -87,24 +90,25 @@ class TestCliExecute(Test):
 
     def test_test(self, cli_blog: Cli):
         assembler: Assembler = cli_blog.execute(
-            ['staze', 'test'], has_to_run_assembler=False)
+            ['staze', 'test'], has_to_run_assembler=False, _is_self_test=True)
         assert assembler.mode_enum.value == 'test'
 
     def test_dev(self, cli_blog: Cli):
         assembler: Assembler = cli_blog.execute(
-            ['staze', 'dev'], has_to_run_assembler=False)
+            ['staze', 'dev'], has_to_run_assembler=False, _is_self_test=True)
         assert assembler.mode_enum.value == 'dev'
 
     def test_prod(self, cli_blog: Cli):
         assembler: Assembler = cli_blog.execute(
-            ['staze', 'prod'], has_to_run_assembler=False)
+            ['staze', 'prod'], has_to_run_assembler=False, _is_self_test=True)
         assert assembler.mode_enum.value == 'prod'
 
     def test_host_port(self, cli_blog: Cli):
         assembler: Assembler = cli_blog.execute(
             ['staze', 'dev', '-h', '0.0.0.0', '-p', '6000'],
-            has_to_run_assembler=False
-        )
+            has_to_run_assembler=False,
+            _is_self_test=True
+            )
         assert assembler.mode_enum.value == 'dev'
         assert assembler.app.port == 6000
 
@@ -118,7 +122,8 @@ class TestCliExecute(Test):
         assembler: Assembler = cli_blog.execute(
             ['staze', 'exec', 'add_user'],
             has_to_run_assembler=False,
-            _has_to_recreate_migrations=True
+            _has_to_recreate_migrations=True,
+            _is_self_test=True
         )
         assert assembler.executables_to_execute == ['add_user']
 
@@ -132,7 +137,8 @@ class TestCliExecute(Test):
         assembler: Assembler = cli_blog.execute(
             ['staze', 'dev', '-x', 'add_user'],
             has_to_run_assembler=False,
-            _has_to_recreate_migrations=True
+            _has_to_recreate_migrations=True,
+            _is_self_test=True
         )
         assert assembler.executables_to_execute == ['add_user']
 
@@ -146,7 +152,8 @@ class TestCliExecute(Test):
         try:
             assembler: Assembler = cli_blog.execute(
                 ['staze', 'init', '-x', 'add_user'],
-                has_to_run_assembler=False
+                has_to_run_assembler=False,
+                _is_self_test=True
             )
         except UncompatibleArgsCliError:
             pass
@@ -160,7 +167,8 @@ class TestCliExecute(Test):
         try:
             assembler: Assembler = cli_blog.execute(
                 ['staze', 'dev', '-h', '0.0.0.0', '-h', '127.0.0.1'],
-                has_to_run_assembler=False
+                has_to_run_assembler=False,
+                _is_self_test=True
             )
         except RepeatingArgCliError:
             pass
@@ -173,7 +181,8 @@ class TestCliExecute(Test):
         try:
             assembler: Assembler = cli_blog.execute(
                 ['staze', 'dev', '-p', '5001', '-p', '5002'],
-                has_to_run_assembler=False
+                has_to_run_assembler=False,
+                _is_self_test=True
             )
         except RepeatingArgCliError:
             pass
@@ -186,7 +195,8 @@ class TestCliExecute(Test):
         try:
             assembler: Assembler = cli_blog.execute(
                 ['staze', 'dev', '-x', 'add_user', '-x', 'add_user'],
-                has_to_run_assembler=False
+                has_to_run_assembler=False,
+                _is_self_test=True
             )
         except RepeatingArgCliError:
             pass
@@ -198,7 +208,8 @@ class TestCliExecute(Test):
     def test_exec_wrong_name(self, cli_blog: Cli):
         assembler: Assembler = cli_blog.execute(
             ['staze', 'exec', 'add_user123'],
-            has_to_run_assembler=False
+            has_to_run_assembler=False,
+            _is_self_test=True
         )
 
         try:

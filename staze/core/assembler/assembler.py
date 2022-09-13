@@ -68,7 +68,8 @@ class Assembler(Singleton):
             root_dir: str = os.getcwd(),
             extra_configs_by_name: dict[str, Any] | None = None,
             executables_to_execute: list[str] | None = None,
-            _has_to_recreate_migrations: bool = False
+            _has_to_recreate_migrations: bool = False,
+            _is_self_test: bool = False
         ) -> None:
         # Define attributes for getter methods to be used at builder
         # Do not set extra_configs_by_name to None at initialization, because
@@ -83,6 +84,9 @@ class Assembler(Singleton):
         # On assembler.run() re-init of migrations with removing of migrations
         # folder will be done
         self._has_to_recreate_migrations: bool = _has_to_recreate_migrations
+        
+        # For self unit-testing to apply specific logic
+        self._is_self_test = _is_self_test
 
         # Load build from module
         if build:
@@ -255,6 +259,7 @@ class Assembler(Singleton):
         self._build_error_handler()
 
     def _recreate_migrations(self):
+        log.warning('Test: Recreate migrations')
         with self.app.app_context():
             # Default folder "migrations" is removed by default. I think there
             # is no need to specify additional variable for that, since it's
@@ -278,13 +283,13 @@ class Assembler(Singleton):
             # Run executables in any case for run app mode enum
             self._run_exec()
 
-            if self.mode_enum is RunAppModeEnum.TEST:
-                self._run_test()
-            else:
-                if _has_to_run_app:
-                    self._run_app()
+            if _has_to_run_app:
+                if self.mode_enum is RunAppModeEnum.TEST:
+                    self._run_test()
                 else:
-                    log.warning('App is not launched, according flag given')
+                    self._run_app()
+            else:
+                log.warning('App is not launched, according flag given')
         elif isinstance(self.mode_enum, HelperAppModeEnum):
             if self.mode_enum is HelperAppModeEnum.VERSION:
                 print(f"Staze {staze_version}")
@@ -505,7 +510,7 @@ class Assembler(Singleton):
         """Build all views by registering them to app."""
         if self.view_classes:
             for view_class in self.view_classes:
-                self.app.register_view(view_class)
+                self.app.register_view(view_class, self._is_self_test)
 
     def _build_custom_shell_processors(self) -> None:
         if self.shell_processors:

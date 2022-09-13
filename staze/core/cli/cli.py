@@ -38,7 +38,8 @@ class Cli():
                 self,
                 args: list[str] | None = None,
                 has_to_run_assembler: bool = True,
-                _has_to_recreate_migrations: bool = False
+                _has_to_recreate_migrations: bool = False,
+                _is_self_test: bool = False
             ) -> Assembler:
         """Execute args list as cli would do.
         
@@ -79,7 +80,8 @@ class Cli():
             root_dir=root_dir,
             build=self.build, 
             executables_to_execute=cli_input.executables_to_execute,
-            _has_to_recreate_migrations=_has_to_recreate_migrations
+            _has_to_recreate_migrations=_has_to_recreate_migrations,
+            _is_self_test=_is_self_test
         )
 
         if has_to_run_assembler:

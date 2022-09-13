@@ -9,6 +9,7 @@ from turbo_flask import Turbo
 from flask_session import Session
 from flask.testing import FlaskClient
 from staze.core import validation
+from staze.core.app.app_error import AppError
 from staze.core.app.app_mode_enum import (
     RunAppModeEnum, HelperAppModeEnum, DatabaseAppModeEnum, AppModeEnumUnion)
 from staze.core.log.log import log
@@ -205,7 +206,10 @@ class App(Service):
     def test_request_context(self) -> RequestContext:
         return self.native_app.test_request_context()
 
-    def register_view(self, view_class: type[View]) -> None:
+    def register_view(
+            self, view_class: type[View],
+            _is_self_test: bool = False
+            ) -> None:
         """Register given view class for the app."""
         endpoint: str
         methods: list[str]
@@ -221,9 +225,13 @@ class App(Service):
 
         view_func = view_class.as_view(endpoint)
 
-        self.native_app.add_url_rule(
-            view_class.ROUTE, view_func=view_func,
-            methods=methods)
+        try:
+            self.native_app.add_url_rule(
+                view_class.ROUTE, view_func=view_func,
+                methods=methods)
+        except AssertionError as error:
+            if not _is_self_test:
+                raise AppError(*error.args)
 
     def register_error(
             self,

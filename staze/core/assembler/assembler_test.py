@@ -20,7 +20,12 @@ def assembler_test(
         mode_enum=RunAppModeEnum.TEST,
         host=default_host,
         port=default_port,
-        root_dir=os.path.join(os.getcwd(), blog_root_dir))
+        root_dir=os.path.join(os.getcwd(), blog_root_dir),
+        _is_self_test=True,
+        _has_to_recreate_migrations=True
+        )
+    
+    assembler.run(_has_to_run_app=False)
 
     yield assembler
 
@@ -37,7 +42,12 @@ def assembler_dev(
         mode_enum=RunAppModeEnum.DEV,
         host=default_host,
         port=default_port,
-        root_dir=os.path.join(os.getcwd(), blog_root_dir))
+        root_dir=os.path.join(os.getcwd(), blog_root_dir),
+        _is_self_test=False,
+        _has_to_recreate_migrations=True
+        )
+    
+    assembler.run(_has_to_run_app=False)
 
     yield assembler
 
@@ -54,7 +64,12 @@ def assembler_prod(
         mode_enum=RunAppModeEnum.PROD,
         host=default_host,
         port=default_port,
-        root_dir=os.path.join(os.getcwd(), blog_root_dir))
+        root_dir=os.path.join(os.getcwd(), blog_root_dir),
+        _is_self_test=True,
+        _has_to_recreate_migrations=True
+        )
+    
+    assembler.run(_has_to_run_app=False)
 
     yield assembler
 

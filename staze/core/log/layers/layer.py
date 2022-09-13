@@ -1,5 +1,6 @@
 import json
 from loguru._handler import Message
+from flask import request
 
 
 class Layer:
@@ -24,6 +25,12 @@ class Layer:
         self._path = path
         self._compression = compression
         self._rotation = rotation
+
+    def _populate_with_request_context(self, log_extra: dict) -> None:
+        try:
+            print(request.__dict__)
+        except RuntimeError:
+            pass
 
     def _write(self, log: dict) -> None:
         with open(self._path, 'a+') as file:

@@ -13,27 +13,26 @@ from staze.tests.blog.app.user.user_service import UserService
 
 
 @fixture
-def user_orm(app: App, db: Database) -> UserOrm:
-    with app.app_context():
+def user_orm(assembler_dev: Assembler) -> UserOrm:
+    with assembler_dev.app.app_context():
         return UserOrm.create(username='Mark', password='helloworld')
 
 
-# class TestApiUser(Test):
-#     def test_get(
-#             self,
-#             app: App,
-#             db: Database,
-#             client: FlaskClient,
-#             http: HttpClient):
-#         with app.app_context():
-#             response: TestResponse = http.get('/users/1', 404)
+class TestApiUser:
+    def test_get(
+            self,
+            user_orm: UserOrm,
+            ):
+        assembler: Assembler = Assembler.instance()
+        with assembler.app.app_context():
+            assembler.database.refpush(user_orm)
+            response: TestResponse = assembler.app.test_client.get(
+                '/users/1'
+            )
 
 
-class TestUserService(Test):
+class TestUserService:
     def test_config_mode_test(self, assembler_test: Assembler):
-        log.debug(assembler_test.mode_enum)
-        log.debug(assembler_test.service_classes)
-        log.debug(assembler_test.custom_services)
         assert \
             assembler_test.custom_services['user'].config['config_mode'] \
                 == 'test'
