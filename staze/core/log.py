@@ -31,7 +31,7 @@ class log(Singleton):
     critical = native_log.critical
 
     @classmethod
-    def _create(cls, *args, **kwargs) -> int:
+    def add(cls, *args, **kwargs) -> int:
         return cls.native_log.add(*args, **kwargs)
 
     @classmethod
@@ -73,7 +73,7 @@ class log(Singleton):
                 and path.split('.')[-1] == 'log'):
             os.remove(path)
 
-        cls._create(
+        cls.add(
             path, 
             format=format, 
             level=level,
