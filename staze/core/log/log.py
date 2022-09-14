@@ -1,12 +1,16 @@
 import os
 from pydoc import classname
-from typing import Any, Callable, Literal
+from typing import TYPE_CHECKING, Any, Callable, Literal
 
 from loguru import logger as loguru
 from warepy import Singleton
+from staze.core.app.app_mode_enum import AppModeEnumUnion
 from staze.core.log.layers.ecs import Ecs
 from staze.core.log.layers.layer import Layer
 from staze.core.log.log_error import LogError
+
+if TYPE_CHECKING:
+    from staze.core.service.service import Service
 
 
 class log(Singleton):
@@ -36,6 +40,9 @@ class log(Singleton):
     warning = native_log.warning
     error = native_log.error
     critical = native_log.critical
+
+    _mode_enum: AppModeEnumUnion
+    _service_by_hash: dict[int, 'Service'] = {}
 
     @classmethod
     def add(cls, *args, **kwargs) -> int:
@@ -102,6 +109,7 @@ class log(Singleton):
                 and os.path.isfile(path)
                 # Ensure that specified file is log for security
                 and path.split('.')[-1] == 'log'):
+            log.warning('Delete old log file')
             os.remove(path)
 
         sink: Callable | str
@@ -121,7 +129,11 @@ class log(Singleton):
             )
         elif layer in layer_names:
             sink = cls._find_layer_by_name(layer)(
-                    path=path, compression='zip', rotation=rotation
+                    path=path,
+                    mode_enum=cls._mode_enum,
+                    compression='zip',
+                    rotation=rotation,
+                    service_by_hash=cls._service_by_hash
                 ).format
             return cls.add(
                 sink,

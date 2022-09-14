@@ -1,5 +1,6 @@
 from warepy import Singleton
 from staze.core.log.log import log
+from staze.core.log.log_snapshot_field_spec_enum import LogSnapshotFieldSpecEnum
 
 
 class Service(Singleton):
@@ -16,8 +17,18 @@ class Service(Singleton):
     CONFIG_NAME: str | None = None
     BASE_NAME: str = 'Service'
 
+    # Whether snapshots can be made from this service by log layers. Note that
+    # this settings is applied for every subobject's dict, so private fields
+    # of subobjects with according setting won't be part of snapshot too
+    LOG_SNAPSHOT_RULES: dict[str, LogSnapshotFieldSpecEnum] = {
+        'public': LogSnapshotFieldSpecEnum.ALWAYS,
+        'protected': LogSnapshotFieldSpecEnum.ALWAYS,
+        'private': LogSnapshotFieldSpecEnum.ALWAYS
+    }
+
     def __init__(self, config: dict) -> None:
         self.config = config
+        self.log = log.bind(service_hash=hash(self))
 
     @classmethod
     def get_config_name(cls) -> str:

@@ -1,5 +1,4 @@
 from enum import Enum
-from staze.core.model.model import Model
 
 
 class RunAppModeEnum(Enum):

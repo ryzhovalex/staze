@@ -12,7 +12,7 @@ class Ecs(Layer):
 
         labels: dict = {}
 
-        self._populate_with_request_context(result)
+        self._populate_request_context(result)
         
         client_ip: str | None = None
         url_full: str | None = None
@@ -40,6 +40,16 @@ class Ecs(Layer):
         for k, v in record['extra'].items():
             # Client information should be stored separately
             match k:
+                case 'service_hash':
+                    service_hash = v
+                    if type(service_hash) is not int:
+                        raise LogError(
+                            'Service hash should have type int,'
+                            f' got {type(service_hash)} instead'
+                            )
+                    self._populate_service_context(result, service_hash)
+                    # Write service hash to labels anyway
+                    labels[k] = v
                 case 'client_ip':
                     if type(v) is not str:
                         raise LogError(
@@ -207,5 +217,7 @@ class Ecs(Layer):
             result['http.response.mime_type'] = http_response_mime_type
         if http_response_body_content:
             result['http.response.body.content'] = http_response_body_content
+
+        result['ecs.version'] = '8.4'
 
         self._write(result)

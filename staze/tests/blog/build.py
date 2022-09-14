@@ -9,7 +9,7 @@ from staze.tests.blog.app.post.post_orm import PostOrm
 from staze.tests.blog.app.tag.tag_orm import TagOrm
 from staze.tests.blog.app.user.user_orm import UserOrm
 from staze.tests.blog.app.user.user_service import UserService
-from staze.tests.blog.app.user.user_view import UsersIdView
+from staze.tests.blog.app.user.user_view import UsersIdView, UsersServiceLogView
 
 
 def create_all():
@@ -28,7 +28,8 @@ service_classes: list[type[Service]] = [
 ]
 
 view_classes: list[type[View]] = [
-    UsersIdView
+    UsersIdView,
+    UsersServiceLogView
 ]
 
 build = Build(

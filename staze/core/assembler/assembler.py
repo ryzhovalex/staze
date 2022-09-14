@@ -81,6 +81,9 @@ class Assembler(Singleton):
         self.cli_args = cli_args
         self.executables_to_execute = executables_to_execute
 
+        # Store all service hashes and their representative service objects
+        self._service_by_hash: dict[int, Service] = {}
+
         # On assembler.run() re-init of migrations with removing of migrations
         # folder will be done
         self._has_to_recreate_migrations: bool = _has_to_recreate_migrations
@@ -225,6 +228,7 @@ class Assembler(Singleton):
             before_first_request_func=self.before_first_request_func,
             after_request_func=self.after_request_func
         )
+        self._service_by_hash[hash(self.app)] = self.app
         layers_to_log: list[str] = []
 
         # Enable only modules with specified configs.
@@ -239,6 +243,7 @@ class Assembler(Singleton):
             else:
                 self.database: Database = Database(
                     config=self._assemble_service_config('database'))
+                self._service_by_hash[hash(self.database)] = self.database
 
                 # Perform Database postponed setup
                 self._perform_database_postponed_setup()
@@ -251,6 +256,7 @@ class Assembler(Singleton):
                 self.socket = Socket(
                     config=self._assemble_service_config('socket'),
                     app=self.app)
+                self._service_by_hash[hash(self.socket)] = self.socket
                 self.socket_enabled = True
                 layers_to_log.append('socket')
             
@@ -408,6 +414,11 @@ class Assembler(Singleton):
                 for k, v in log_config.items():
                     log_kwargs[k] = v
 
+            # Not the best practice, but still a way to insert service hash map
+            # to class method only log class
+            log._service_by_hash = self._service_by_hash
+            log._mode_enum = self.mode_enum
+
             log.configure(**log_kwargs)
 
     def _build_custom_socks(self) -> None:
@@ -446,6 +457,7 @@ class Assembler(Singleton):
                     service_config = {}
 
                 service: Service = service_class(config=service_config)
+                self._service_by_hash[hash(service)] = service
                 self._custom_services[service_class.get_config_name()] = \
                     service
 
@@ -491,9 +503,9 @@ class Assembler(Singleton):
         # configs, such as root_dir, because they cannot import Assembler
         # due to circular import issue and get this fields by themselves
         if 'root_dir' in config:
-            raise ValueError(
+            raise AssemblerError(
                 'Service config shouldn\'t contain key `root_dir`')
-        config["root_dir"] = self.root_dir
+        config['root_dir'] = self.root_dir
 
         return config
 

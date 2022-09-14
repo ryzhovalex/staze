@@ -4,6 +4,13 @@ from staze import Service, log
 class UserService(Service):
     def __init__(self, config: dict) -> None:
         super().__init__(config)
+        
+        # Variables to test service dict logging
+        self._request_log_a: int = 2
+        self._request_log_b: str = 'helloworld'
+
+    def request_log(self) -> None:
+        self.log.info('Log arbitrary data about user service')
 
     def get_license_number(self) -> int:
         try:
