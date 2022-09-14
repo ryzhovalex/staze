@@ -203,6 +203,8 @@ class Assembler(Singleton):
         """
         self.config_classes: list[Config] = []
 
+        if config_dir[:2] == './':
+            config_dir = config_dir[2:]
         config_path: str = os.path.join(self.root_dir, config_dir)
         source_map_by_name: dict[str, dict[RunAppModeEnum, str]] = \
             Config.find_config_files(config_path)
