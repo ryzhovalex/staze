@@ -12,3 +12,4 @@ python-dotenv
 flask-socketio
 loguru
 pydantic
+flask-admin

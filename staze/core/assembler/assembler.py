@@ -10,6 +10,7 @@ import pytest
 from dotenv import load_dotenv
 from flask_socketio import SocketIO
 from staze import __version__ as staze_version
+from staze.core.admin.admin import Admin
 from staze.core.app.app import App
 from staze.core.app.app_mode_enum import (AppModeEnumUnion,
                                           DatabaseAppModeEnum,
@@ -250,6 +251,18 @@ class Assembler(Singleton):
                 # Perform Database postponed setup
                 self._perform_database_postponed_setup()
                 layers_to_log.append('database')
+
+                # Admin always initializes with database
+                # FIXME:
+                #   flask-admin doesn't suit my needs on customized orms.
+                #   I'm considering the way to develop own admin tools
+                # self.admin: Admin = Admin(
+                #     config=self._assemble_service_config('admin'),
+                #     app=self.app,
+                #     database=self.database
+                # )
+                # self._service_by_hash[hash(self.admin)] = self.admin
+                # layers_to_log.append('database')
             try:
                 Config.find_by_name('socket', self.config_classes)
             except ValueError:

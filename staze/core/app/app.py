@@ -67,8 +67,12 @@ class App(Service):
         # Initialize turbo.js
         # https://blog.miguelgrinberg.com/post/dynamically-update-your-flask-web-pages-using-turbo-flask
         self.turbo = Turbo(self.native_app)
+
         # Initialize flask-session after all settings are applied
-        self.flask_session = Session(self.native_app)
+        # FIXME:
+        #   flask-session is commented out due to error on flask-admin with
+        #   missing secret_key of the application
+        # self.flask_session = Session(self.native_app)
         self._flush_redis_session_database()
 
         self._before_request_func = before_request_func
@@ -104,6 +108,12 @@ class App(Service):
     def _handle_after_request_default(self, response: Response) -> Response:
         """Log all responses
         """
+        # This line should be exactly here, at the top of the after_request
+        # function in order to work properly on flask-admin, but i don't know
+        # why it works this way
+        # https://github.com/closeio/Flask-gzip/issues/7
+        response.direct_passthrough = False
+
         # https://gist.github.com/alexaleluia12/e40f1dfa4ce598c2e958611f67d28966
         log_func: Callable
 
@@ -122,7 +132,7 @@ class App(Service):
             log_func = _log.error
 
         log_func(f'{request.method} {request.path} - {response}')
-
+        
         return response
 
     def _assign_defaults_to_config(self, config: dict) -> None:
@@ -169,7 +179,8 @@ class App(Service):
         # Generate random hex token for App's secret key, if not given in
         # config.
         if self.native_app.config["SECRET_KEY"] is None:
-            self.native_app.config["SECRET_KEY"] = secrets.token_hex(16)
+            secret_key: str = secrets.token_hex(16)
+            self.native_app.config["SECRET_KEY"] = secret_key
             
     def _enable_testing_config(self, config: dict) -> None:
         # Enable testing if appropriate mode has been set. Do not rely on enum
