@@ -1,27 +1,18 @@
 __version__ = '0.0.0'
 
-import os
-import sys
 import secrets
 
+from staze import Build, Service, Sock, View
 from staze.core.database.database import Database
-from staze.tests.blog.app.user.user_view import UsersIdView
-
-# Add parent dir of app's dir
-# sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
-from staze import (
-    Build, Service, View, Sock)
-
-from staze.tests.blog.app.user.user_service import UserService
 from staze.core.log.log import log
-from staze.tests.blog.app.user.user_orm import UserOrm
 from staze.tests.blog.app.post.post_orm import PostOrm
 from staze.tests.blog.app.tag.tag_orm import TagOrm
+from staze.tests.blog.app.user.user_orm import UserOrm
+from staze.tests.blog.app.user.user_service import UserService
+from staze.tests.blog.app.user.user_view import UsersIdView
 
 
 def add_user():
-
     username: str = secrets.token_hex(16)
     log.info(f'Add user {username}')
     user_orm: UserOrm = UserOrm.create(
@@ -39,6 +30,7 @@ view_classes: list[type[View]] = [
 
 build = Build(
     version=__version__,
+    config_dir='./configs',
     service_classes=service_classes,
     view_classes=view_classes,
     executables=[add_user]
