@@ -70,6 +70,7 @@ class log(Singleton):
             level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
             serialize: bool,
             layer: str | None = None,
+            filter: Callable | str | dict | None = None,
             delete_old: bool = False
         ) -> int:
         """Init log model instance depending on given arguments. 
@@ -96,6 +97,9 @@ class log(Singleton):
                 Specify layer to operate on logs. Every chosen layer stands
                 as specific formatter and always saves logs to specified path.
                 Defaults to None, i.e. default behaviour
+            filter (optional):
+                A directive optionally used to decide for each logged message
+                whether it should be sent to the sink or not
             delete_old (optional):
                 Flag whether is it required to remove old log file, specified under
 
@@ -125,7 +129,8 @@ class log(Singleton):
                 level=level,
                 compression="zip", 
                 rotation=rotation, 
-                serialize=serialize
+                serialize=serialize,
+                filter=filter
             )
         elif layer in layer_names:
             sink = cls._find_layer_by_name(layer)(
@@ -139,7 +144,8 @@ class log(Singleton):
                 sink,
                 format=format, 
                 level=level,
-                serialize=serialize
+                serialize=serialize,
+                filter=filter
             )
         else:
             raise LogError(f'Unrecognized layer: {layer}')
