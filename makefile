@@ -1,22 +1,22 @@
 test: staze-test blog-test
 
 staze-test:
-	pytest -x
+	pytest -x --ignore=blog
 
 blog-init:
-	$(MAKE) -C staze/tests/blog	init PYTHONPATH=$(PWD)
+	$(MAKE) PYTHONPATH=$(PWD) -C staze/tests/blog	init
 
 blog-migrate:
-	$(MAKE) -C staze/tests/blog	migrate PYTHONPATH=$(PWD)
+	$(MAKE) PYTHONPATH=$(PWD) -C staze/tests/blog	migrate
 
 blog-upgrade:
-	$(MAKE) -C staze/tests/blog	upgrade PYTHONPATH=$(PWD)
+	$(MAKE) PYTHONPATH=$(PWD) -C staze/tests/blog	upgrade
 
 blog-test:
-	$(MAKE) -C staze/tests/blog	test PYTHONPATH=$(PWD)
+	$(MAKE) PYTHONPATH=$(PWD) -C staze/tests/blog	test
 
 blog-dev:
-	$(MAKE) -C staze/tests/blog	dev PYTHONPATH=$(PWD)
+	$(MAKE) PYTHONPATH=$(PWD) -C staze/tests/blog	dev
 
 blog-prod:
-	$(MAKE) -C staze/tests/blog	prod PYTHONPATH=$(PWD)
+	$(MAKE) PYTHONPATH=$(PWD) -C staze/tests/blog	prod

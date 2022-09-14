@@ -5,6 +5,8 @@ from staze.tests.blog.app.badge.badge_orm import BadgeOrm
 from sqlalchemy.ext.hybrid import hybrid_property
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from staze.tests.blog.app.user.user import User
+
 if TYPE_CHECKING:
     from staze.tests.blog.app.post.post_orm import PostOrm
 
@@ -37,6 +39,14 @@ class UserOrm(Database.Orm):
     @hybrid_property
     def post_ids(self) -> list[int]:
         return [orm.id for orm in self._post_orms]
+
+    @hybrid_property
+    def model(self) -> User:
+        return User(
+            id=self.id,
+            type=self.type,
+            username=self.username
+        )
 
 
 class AdvancedUserOrm(UserOrm):

@@ -9,12 +9,7 @@ class UsersIdView(View):
 
     def get(self, id: int):
         user_orm: UserOrm = UserOrm.get_first(id=id)
-        return {
-            'user': {
-                'username': user_orm.username,
-                'post_ids': user_orm.post_ids
-            }
-        }
+        return user_orm.model.api_dict
 
 
 class UsersServiceLogView(View):

@@ -241,11 +241,11 @@ class Cli():
                 break
             executables_to_execute.append(name)
 
-        if executables_to_execute == []:
-            raise CliError(
-                'No executables specified for flag -x')
-
-        cli_input_kwargs['executables_to_execute'] = executables_to_execute
+        if cli_input_kwargs['mode_enum'] is not RunAppModeEnum.TEST:
+            if executables_to_execute == []:
+                raise CliError(
+                    'No executables specified for flag -x')
+            cli_input_kwargs['executables_to_execute'] = executables_to_execute
         # Return index of the next flag counting amount of added cli
         # arguments
         return flag_index + len(executables_to_execute) + 1

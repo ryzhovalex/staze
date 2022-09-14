@@ -380,8 +380,20 @@ class Assembler(Singleton):
         self.app.run()
 
     def _run_test(self):
-        log.info('Run tests')
-        pytest.main(self.cli_args)
+        test_args: list[str] = []
+
+        # Specify rootdir for pytest clearly, even if any problems without
+        # this haven't been noticed
+        test_args.append('--rootdir')
+        test_args.append(self.root_dir)
+
+        if self.cli_args:
+            # Don't count first two arguments, which something like
+            # "['staze', 'test']"
+            test_args = self.cli_args[2:]
+
+        log.info(f'Run test: {test_args}')
+        pytest.main(test_args)
 
     def _build_log(self) -> None:
         """Call chain to build log."""
