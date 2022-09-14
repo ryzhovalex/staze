@@ -16,5 +16,5 @@ class StazeServiceModel(ServiceModel):
     host: str
     port: int
     ctx_processor_func: Callable | None = None
-    each_request_func: Callable | None = None
-    first_request_func: Callable | None = None
+    before_request_func: Callable | None = None
+    before_first_request_func: Callable | None = None

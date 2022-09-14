@@ -1,8 +1,20 @@
-test:
+clear-migrations:
+	rm -rf migrations
+
+init: clear-migrations
+	python -m staze init
+
+migrate:
+	python -m staze migrate
+
+upgrade:
+	python -m staze upgrade
+
+test: init migrate upgrade
 	python -m staze test
 
-dev:
-	python -m staze dev
+dev: init migrate upgrade
+	python -m staze dev -x create_all add_user
 
-prod:
-	python -m staze prod
+prod: init migrate upgrade
+	python -m staze prod -x create_all add_user

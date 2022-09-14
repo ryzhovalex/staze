@@ -13,7 +13,8 @@ from staze.core.app.app_error import AppError
 from staze.core.app.app_mode_enum import (
     RunAppModeEnum, HelperAppModeEnum, DatabaseAppModeEnum, AppModeEnumUnion)
 from staze.core.log.log import log
-from flask import Flask
+from flask import Flask, request
+from flask.wrappers import Response
 from flask import cli as flask_cli
 from flask.ctx import AppContext, RequestContext
 from warepy import get_enum_values
@@ -34,8 +35,9 @@ class App(Service):
                 host: str,
                 port: int,
                 ctx_processor_func: Callable | None = None,
-                each_request_func: Callable | None = None,
-                first_request_func: Callable | None = None
+                before_request_func: Callable | None = None,
+                before_first_request_func: Callable | None = None,
+                after_request_func: Callable | None = None
             ) -> None:
         self._host = host
         self._port = port
@@ -69,11 +71,15 @@ class App(Service):
         self.flask_session = Session(self.native_app)
         self._flush_redis_session_database()
 
-        self._init_app_daemons(
-            ctx_processor_func=ctx_processor_func,
-            each_request_func=each_request_func,
-            first_request_func=first_request_func
-        )
+        self._before_request_func = before_request_func
+        self._before_first_request_func = before_first_request_func
+        self._ctx_processor_func = ctx_processor_func
+        if after_request_func:
+            self._after_request_func = after_request_func
+        else:
+            self._after_request_func = self._handle_after_request_default
+
+        self._init_app_daemons()
 
     @property
     def host(self) -> str:
@@ -94,6 +100,30 @@ class App(Service):
     @property
     def test_client(self) -> FlaskClient:
         return self.native_app.test_client()
+
+    def _handle_after_request_default(self, response: Response) -> Response:
+        """Log all responses
+        """
+        # https://gist.github.com/alexaleluia12/e40f1dfa4ce598c2e958611f67d28966
+        log_func: Callable
+
+        # All request-related data will be populated in log layer, so here work
+        # only with response
+        _log = log.bind(
+            http_response_headers=dict(response.headers),
+            http_response_status_code=response.status_code,
+            http_response_mime_type=response.mimetype,
+            http_response_body_content=response.get_data(as_text=True)
+        )
+
+        if response.status_code < 400:
+            log_func = _log.info
+        else:
+            log_func = _log.error
+
+        log_func(f'{request.method} {request.path} - {response}')
+
+        return response
 
     def _assign_defaults_to_config(self, config: dict) -> None:
         if 'TEMPLATE_PATH' not in config:
@@ -338,25 +368,23 @@ class App(Service):
 
         code.interact(banner=banner, local=ctx)
 
-    def _init_app_daemons(
-            self,
-            ctx_processor_func: Callable | None,
-            each_request_func: Callable | None,
-            first_request_func: Callable | None) -> None:
-        """Binds various background processes to the app."""
-        flask_app = self.get_native_app()
+    def _init_app_daemons(self) -> None:
+        if self._ctx_processor_func:
+            self._ctx_processor_func = self.native_app.context_processor(
+                self._ctx_processor_func)
 
-        if ctx_processor_func:
-            @flask_app.context_processor
-            def invoke_ctx_processor_func():
-                return ctx_processor_func()
+        if self._before_request_func:
+            self._before_request_func = self.native_app.before_request(
+                self._before_request_func
+            )
 
-        if each_request_func:
-            @flask_app.before_request
-            def invoke_each_request_func():
-                return each_request_func()
+        if self._before_first_request_func:
+            self._before_first_request_func = \
+                self.native_app.before_first_request(
+                    self._before_first_request_func
+                )
 
-        if first_request_func:
-            @flask_app.before_first_request
-            def invoke_first_request_func():
-                return first_request_func()
+        if self._after_request_func:
+            self._after_request_func = self.native_app.after_request(
+                self._after_request_func
+            )

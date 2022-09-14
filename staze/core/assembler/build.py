@@ -42,10 +42,10 @@ class Build:
         ctx_processor_func (optional):
             Callable to be called on Flask.context_processor.
             Defaults to None
-        each_request_func (optional):
+        before_request_func (optional):
             Callable to be called on Flask.before_request.
             Defaults to None
-        first_request_func (optional):
+        before_first_request_func (optional):
             Callable to be called on Flask.before_first_request.
             Defaults to None
         executables (optional):
@@ -66,8 +66,9 @@ class Build:
                 default_builtin_error_handler: Callable | None = \
                     None,
                 ctx_processor_func: Callable | None = None,
-                each_request_func: Callable | None = None,
-                first_request_func: Callable | None = None,
+                before_request_func: Callable | None = None,
+                before_first_request_func: Callable | None = None,
+                after_request_func: Callable | None = None,
                 executables: list[Callable] | None = None
             ) -> None:
         self.version = version
@@ -77,11 +78,12 @@ class Build:
         self.view_classes = view_classes
         self.shell_processors = shell_processors
         self.ctx_processor_func = ctx_processor_func
-        self.each_request_func = each_request_func
-        self.first_request_func = first_request_func
+        self.before_request_func = before_request_func
+        self.before_first_request_func = before_first_request_func
         self.sock_classes = sock_classes
         self.default_error_handler = default_error_handler
         self.default_builtin_error_handler = default_builtin_error_handler
+        self.after_request_func = after_request_func
         self.executables = executables
 
     def build_app(

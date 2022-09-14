@@ -102,8 +102,9 @@ class Assembler(Singleton):
         self.view_classes = self.build.view_classes
         self.shell_processors = self.build.shell_processors
         self.ctx_processor_func = self.build.ctx_processor_func
-        self.each_request_func = self.build.each_request_func
-        self.first_request_func = self.build.first_request_func
+        self.before_request_func = self.build.before_request_func
+        self.before_first_request_func = self.build.before_first_request_func
+        self.after_request_func = self.build.after_request_func
         self.sock_classes = self.build.sock_classes
         self.executables = self.build.executables
 
@@ -220,8 +221,9 @@ class Assembler(Singleton):
             port=port, 
             config=self._assemble_service_config('app'),
             ctx_processor_func=self.ctx_processor_func,
-            each_request_func=self.each_request_func,
-            first_request_func=self.first_request_func
+            before_request_func=self.before_request_func,
+            before_first_request_func=self.before_first_request_func,
+            after_request_func=self.after_request_func
         )
         layers_to_log: list[str] = []
 

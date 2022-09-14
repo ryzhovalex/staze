@@ -12,6 +12,9 @@ from staze.tests.blog.app.user.user_service import UserService
 from staze.tests.blog.app.user.user_view import UsersIdView
 
 
+def create_all():
+    Database.instance().create_all()
+
 def add_user():
     username: str = secrets.token_hex(16)
     log.info(f'Add user {username}')
@@ -25,7 +28,7 @@ service_classes: list[type[Service]] = [
 ]
 
 view_classes: list[type[View]] = [
-    # UsersIdView
+    UsersIdView
 ]
 
 build = Build(
@@ -33,5 +36,5 @@ build = Build(
     config_dir='./configs',
     service_classes=service_classes,
     view_classes=view_classes,
-    executables=[add_user]
+    executables=[create_all, add_user]
 )
