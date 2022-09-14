@@ -1,4 +1,4 @@
-flask
+flask==2.2.2
 warepy==0.7.1
 requests
 turbo-flask

@@ -202,10 +202,14 @@ class App(Service):
         # Setting exactly through environs instead of config recommended by
         # Flask creators.
         # https://flask.palletsprojects.com/en/2.0.x/config/#:~:text=Using%20the%20environment,a%20previous%20value.
-        if self._mode_enum not in [RunAppModeEnum.DEV, RunAppModeEnum.TEST]:
-            os.environ["FLASK_ENV"] = "production"
-        else:
-            os.environ["FLASK_ENV"] = "development"
+        #
+        # TODO:
+        #   Remove deprecated block, since flask 2.2 no more supports
+        #   FLASK_ENV
+        # if self._mode_enum not in [RunAppModeEnum.DEV, RunAppModeEnum.TEST]:
+        #     os.environ["FLASK_ENV"] = "production"
+        # else:
+        #     os.environ["FLASK_ENV"] = "development"
 
         return Flask(
             __name__, 
