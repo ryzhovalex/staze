@@ -3,7 +3,9 @@ from typing import TYPE_CHECKING
 from staze.core.database.database import Database
 from .post_tag_table import PostTagTable
 from staze.tests.blog.app.user.user_orm import UserOrm
-from staze.tests.blog.app.tag.tag_orm import TagOrm
+
+if TYPE_CHECKING:
+    from staze.tests.blog.app.tag.tag_orm import TagOrm
 
 
 class PostOrm(Database.Orm):
@@ -22,7 +24,7 @@ class PostOrm(Database.Orm):
             cls,
             title: str,
             content: str,
-            creator_user_orm: UserOrm) -> 'PostOrm':
+            creator_user_orm: 'UserOrm') -> 'PostOrm':
         orm = cls(
             _title=title,
             _content=content

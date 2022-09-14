@@ -25,7 +25,7 @@ def assembler_test(
         _has_to_recreate_migrations=True
         )
     
-    assembler.run(_has_to_run_app=False)
+    # assembler.run(_has_to_run_app=False)
 
     yield assembler
 
@@ -47,7 +47,7 @@ def assembler_dev(
         _has_to_recreate_migrations=True
         )
     
-    assembler.run(_has_to_run_app=False)
+    # assembler.run(_has_to_run_app=False)
 
     yield assembler
 
@@ -69,7 +69,7 @@ def assembler_prod(
         _has_to_recreate_migrations=True
         )
     
-    assembler.run(_has_to_run_app=False)
+    # assembler.run(_has_to_run_app=False)
 
     yield assembler
 

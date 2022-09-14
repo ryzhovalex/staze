@@ -8,17 +8,19 @@ from staze.core.database.database import Database
 from staze.tests.blog.app.user.user_view import UsersIdView
 
 # Add parent dir of app's dir
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+# sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from staze import (
     Build, Service, View, Sock)
 
 from staze.tests.blog.app.user.user_service import UserService
+from staze.core.log.log import log
+from staze.tests.blog.app.user.user_orm import UserOrm
+from staze.tests.blog.app.post.post_orm import PostOrm
+from staze.tests.blog.app.tag.tag_orm import TagOrm
 
 
 def add_user():
-    from staze.tests.blog.app.user.user_orm import UserOrm
-    from staze.core.log.log import log
 
     username: str = secrets.token_hex(16)
     log.info(f'Add user {username}')
@@ -32,7 +34,7 @@ service_classes: list[type[Service]] = [
 ]
 
 view_classes: list[type[View]] = [
-    UsersIdView
+    # UsersIdView
 ]
 
 build = Build(
