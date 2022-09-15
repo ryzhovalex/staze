@@ -46,7 +46,7 @@ class ErrorHandler(Singleton):
                 error_message=err.message,
                 error_code=err.status_code
                 ) \
-            .error(
+            .exception(
                 f'{err.__class__.__name__}'
                 f' {err.status_code}: {err.message}'
                 )

@@ -129,7 +129,7 @@ class App(Service):
         if response.status_code < 400:
             log_func = _log.info
         else:
-            log_func = _log.error
+            log_func = _log.exception
 
         log_func(f'{request.method} {request.path} - {response}')
         
