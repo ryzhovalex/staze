@@ -446,7 +446,7 @@ class Assembler(Singleton):
             log._service_by_hash = self._service_by_hash
             log._mode_enum = self.mode_enum
 
-            log.configure(**log_kwargs)
+            log.setup(**log_kwargs)
 
     def _build_custom_socks(self) -> None:
         if self.sock_classes and self.socket_enabled:

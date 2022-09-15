@@ -119,7 +119,7 @@ class App(Service):
 
         # All request-related data will be populated in log layer, so here work
         # only with response
-        _log = log.bind(
+        _log = log.logger.bind(
             http_response_headers=dict(response.headers),
             http_response_status_code=response.status_code,
             http_response_mime_type=response.mimetype,
@@ -342,7 +342,7 @@ class App(Service):
         namespace of this shell according to its configuration.
 
         This is useful for executing small snippets of management code
-        without having to manually configure the application.
+        without having to manually setup the application.
         """
         banner = (
             f"Python {sys.version} on {sys.platform}\n"

@@ -28,7 +28,7 @@ class Service(Singleton):
 
     def __init__(self, config: dict) -> None:
         self.config = config
-        self.log = log.bind(service_hash=hash(self))
+        self.logger = log.logger.bind(service_hash=hash(self))
 
     @classmethod
     def get_config_name(cls) -> str:

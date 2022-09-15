@@ -41,7 +41,7 @@ class ErrorHandler(Singleton):
 
     def _handle_error_default(self, err: Error):
         if err.SHOULD_BE_LOGGED:
-            log.bind(
+            log.logger.bind(
                 error_type=err.__class__.__name__,
                 error_message=err.message,
                 error_code=err.status_code

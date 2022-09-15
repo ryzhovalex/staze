@@ -3,6 +3,7 @@ from pydoc import classname
 from typing import TYPE_CHECKING, Any, Callable, Literal
 
 from loguru import logger as loguru
+from loguru._logger import Logger
 from warepy import Singleton
 from staze.core.app.app_mode_enum import AppModeEnumUnion
 from staze.core.log.layers.ecs import Ecs
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class log(Singleton):
-    """Logger tool responsible of writing all actions to logs.
+    """Log tool responsible of writing all actions to logs.
 
     Simply said - it is a extra layer over `loguru.log` for keeping one log
     sink through all program.
@@ -31,37 +32,22 @@ class log(Singleton):
     # TODO: Add support of custom log layers
     Layers: list[type[Layer]] = [Ecs]
 
-    native_log = loguru
+    logger = loguru
 
-    catch = native_log.catch
+    catch = logger.catch
+    exception = logger.exception
 
-    debug = native_log.debug
-    info = native_log.info
-    warning = native_log.warning
-    error = native_log.error
-    critical = native_log.critical
+    debug = logger.debug
+    info = logger.info
+    warning = logger.warning
+    error = logger.error
+    critical = logger.critical
 
     _mode_enum: AppModeEnumUnion
     _service_by_hash: dict[int, 'Service'] = {}
 
     @classmethod
-    def add(cls, *args, **kwargs) -> int:
-        return cls.native_log.add(*args, **kwargs)
-
-    @classmethod
-    def remove(cls, handler_id: int) -> None:
-        return cls.native_log.remove()
-
-    @classmethod
-    def get_native_log(cls):
-        return cls.native_log
-
-    @classmethod
-    def bind(cls, **kwargs):
-        return cls.native_log.bind(**kwargs)
-
-    @classmethod
-    def configure(
+    def setup(
             cls,
             *, 
             path: str, 
@@ -123,7 +109,7 @@ class log(Singleton):
 
         if layer is None or layer == 'default':
             sink = path
-            return cls.add(
+            return cls.logger.add(
                 sink,
                 format=format, 
                 level=level,
@@ -140,8 +126,9 @@ class log(Singleton):
                     rotation=rotation,
                     service_by_hash=cls._service_by_hash
                 ).format
-            return cls.add(
-                sink,
+            return cls.logger.add(
+                # Warning here because of some error on overloaded types
+                sink,  # type: ignore
                 format=format, 
                 level=level,
                 serialize=serialize,

@@ -13,5 +13,5 @@ from staze.core.log.log import log
 
 
 # def test_dummy():
-#     log.bind(id=1).debug('Dummy Johnson')
+#     log.logger.bind(id=1).debug('Dummy Johnson')
 #     assert False
