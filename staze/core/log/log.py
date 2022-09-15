@@ -121,7 +121,7 @@ class log(Singleton):
             X.__name__.lower() for X in cls.Layers
         ]
 
-        if layer == 'default':
+        if layer is None or layer == 'default':
             sink = path
             return cls.add(
                 sink,
