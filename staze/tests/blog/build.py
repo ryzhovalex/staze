@@ -5,11 +5,13 @@ import secrets
 from staze import Build, Service, Sock, View
 from staze.core.database.database import Database
 from staze.core.log.log import log
+from staze.tests.blog.app.home.home_view import HomeView
 from staze.tests.blog.app.post.post_orm import PostOrm
 from staze.tests.blog.app.tag.tag_orm import TagOrm
 from staze.tests.blog.app.user.user_orm import UserOrm
 from staze.tests.blog.app.user.user_service import UserService
 from staze.tests.blog.app.user.user_view import UsersIdView, UsersServiceLogView
+from staze.tests.blog.app.favicon_view import FaviconView
 
 
 def create_all():
@@ -29,7 +31,9 @@ service_classes: list[type[Service]] = [
 
 view_classes: list[type[View]] = [
     UsersIdView,
-    UsersServiceLogView
+    UsersServiceLogView,
+    HomeView,
+    FaviconView
 ]
 
 build = Build(

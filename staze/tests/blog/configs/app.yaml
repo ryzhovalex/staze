@@ -1,0 +1,2 @@
+STATIC_DIR: ./app/static
+TEMPLATE_DIR: ./app/templates

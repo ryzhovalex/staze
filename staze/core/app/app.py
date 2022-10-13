@@ -44,16 +44,26 @@ class App(Service):
 
         # Templates by default searched within src/app, which allows to
         # integrate them directly to their logical component's folders
-        self.DEFAULT_TEMPLATE_PATH = os.path.join(
+        self.DEFAULT_TEMPLATE_DIR = os.path.join(
             config['root_dir'], 'src/app')
-        self.DEFAULT_STATIC_PATH = os.path.join(
+        self.DEFAULT_STATIC_DIR = os.path.join(
             config['root_dir'], 'src/assets')
-        self.DEFAULT_INSTANCE_PATH = os.path.join(config['root_dir'], 'var')
+        self.DEFAULT_INSTANCE_DIR = os.path.join(config['root_dir'], 'var')
 
         # Convert all keys from given config to upper case
         self.config = self._make_upper_keys(config)
         self._assign_defaults_to_config(self.config)
         self._validate_config(self.config)
+
+        self.INSTANCE_DIR: str = self.config.get(
+            "INSTANCE_DIR", self.DEFAULT_INSTANCE_DIR
+        )
+        self.TEMPLATE_DIR: str = self.config.get(
+            "TEMPLATE_DIR", self.DEFAULT_TEMPLATE_DIR
+        ) 
+        self.STATIC_DIR: str = self.config.get(
+            "STATIC_DIR", self.DEFAULT_STATIC_DIR
+        )
 
         super().__init__(self.config)
         self._mode_enum: AppModeEnumUnion = mode_enum
@@ -136,12 +146,12 @@ class App(Service):
         return response
 
     def _assign_defaults_to_config(self, config: dict) -> None:
-        if 'TEMPLATE_PATH' not in config:
-            config['TEMPLATE_PATH'] = self.DEFAULT_TEMPLATE_PATH
-        if 'STATIC_PATH' not in config:
-            config['STATIC_PATH'] = self.DEFAULT_STATIC_PATH
-        if 'INSTANCE_PATH' not in config:
-            config['INSTANCE_PATH'] = self.DEFAULT_INSTANCE_PATH
+        if 'TEMPLATE_DIR' not in config:
+            config['TEMPLATE_DIR'] = self.DEFAULT_TEMPLATE_DIR
+        if 'STATIC_DIR' not in config:
+            config['STATIC_DIR'] = self.DEFAULT_STATIC_DIR
+        if 'INSTANCE_DIR' not in config:
+            config['INSTANCE_DIR'] = self.DEFAULT_INSTANCE_DIR
 
     def _validate_config(self, config: dict) -> None:
         """Check if all keys in the config are correct."""
@@ -194,10 +204,6 @@ class App(Service):
             self.native_app.config["TESTING"] = config["TESTING"]
 
     def _spawn_native_app(self, config: dict) -> Flask:
-        self.instance_path = self.config.get("INSTANCE_PATH")
-        self.template_folder = self.config.get("TEMPLATE_PATH") 
-        self.static_folder = self.config.get("STATIC_PATH")
-
         # Set Flask environs according to given mode.
         # Setting exactly through environs instead of config recommended by
         # Flask creators.
@@ -210,9 +216,9 @@ class App(Service):
 
         return Flask(
             __name__, 
-            instance_path=self.instance_path, 
-            template_folder=self.template_folder, 
-            static_folder=self.static_folder
+            instance_path=self.INSTANCE_DIR, 
+            template_folder=self.TEMPLATE_DIR, 
+            static_folder=self.STATIC_DIR
         )
 
     def get_secret_key(self) -> str:
@@ -281,7 +287,13 @@ class App(Service):
             handler_function: Callable) -> None:
         self.native_app.register_error_handler(error_class, handler_function)
 
-    def push_turbo(self, action: TurboActionEnum, target: str, template_path: str, ctx_data: dict = {}) -> None:
+    def push_turbo(
+            self,
+            action: TurboActionEnum,
+            target: str,
+            template_path: str,
+            ctx_data: dict = {}
+        ) -> None:
         """Push turbo action to target with rendered from path template
         contextualized with given data.
         
