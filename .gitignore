@@ -4,9 +4,6 @@ test.ipynb
 # Ignore cc compiler output.
 *.out
 
-# ignore vscode files
-.vscode/
-
 # ignore test-purpose large media pdfs
 *.pdf
 

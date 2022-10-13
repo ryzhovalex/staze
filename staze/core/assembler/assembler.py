@@ -81,6 +81,8 @@ class Assembler(Singleton):
         self.mode_enum: AppModeEnumUnion = mode_enum
         self.cli_args = cli_args
         self.executables_to_execute = executables_to_execute
+        self.host = host
+        self.port = port
 
         # Store all service hashes and their representative service objects
         self._service_by_hash: dict[int, Service] = {}
@@ -129,7 +131,7 @@ class Assembler(Singleton):
 
         self._build_configs(self.config_dir)
         
-        self._build_builtin_services(mode_enum, host, port)
+        self._build_builtin_services(mode_enum, self.host, self.port)
         self._build_builtin_helpers()
 
         # Namespace to hold all initialized services. Should be used only for

@@ -10,6 +10,7 @@ from staze.core.assembler.assembler_test import (
 from staze.core.app.app_test import app
 from staze.core.database.database_test import db
 from staze.core.log.log import log
+from staze.core.constants import DEFAULT_HOST, DEFAULT_PORT
 
 
 @fixture
@@ -21,12 +22,12 @@ def blog_build() -> Build:
 
 @fixture
 def default_host() -> str:
-    return '127.0.0.1'
+    return DEFAULT_HOST
 
 
 @fixture
 def default_port() -> int:
-    return 6000
+    return DEFAULT_PORT
 
 
 @fixture

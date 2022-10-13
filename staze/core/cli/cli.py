@@ -10,11 +10,12 @@ from staze.core.app.app_mode_enum import (AppModeEnumUnion,
                                           HelperAppModeEnum, RunAppModeEnum)
 from staze.core.assembler.assembler import Assembler
 from staze.core.assembler.build import Build
-from staze.core.cli.cli_error import (CliError, NoMoreArgsCliError,
+from staze.core.cli.cli_error import (BindStringParsingCliError, CliError, NoMoreArgsCliError,
                                       RedundantFlagCliError,
                                       RedundantValueCliError, RepeatingArgCliError, UncompatibleArgsCliError)
 from staze.core.cli.cli_input import CliInput
 from staze.core.log.log import log
+from staze.core.constants import DEFAULT_HOST, DEFAULT_PORT
 from warepy import (get_enum_values, get_union_enum_values,
                     match_enum_containing_value)
 
@@ -115,16 +116,19 @@ class Cli():
                         f'Unrecognized mode: {self.args[1]}')
 
         # Create according enum with mode value
-        cli_input_kwargs['mode_enum'] = ModeEnumClass(self.args[1])
+        mode_enum: AppModeEnumUnion = ModeEnumClass(self.args[1])
+        cli_input_kwargs['mode_enum'] = mode_enum
 
         # Searching starts from index 2 since first two elements is
         # "staze" and mode keyword. Searching starts in any case, even if it's
         # not required (e.g. mode "version" already picked) to find possible
         # mistakes and raise error for that
-        try:
-            self._search_args(2, cli_input_kwargs)
-        except NoMoreArgsCliError:
-            pass
+        if mode_enum is not RunAppModeEnum.TEST:
+            # For all other cases perform standard searching
+            try:
+                self._search_args(2, cli_input_kwargs)
+            except NoMoreArgsCliError:
+                pass
 
         return CliInput(**cli_input_kwargs)
 
@@ -140,10 +144,10 @@ class Cli():
         # In other words, "index" is often denotes next flag, which may be
         # applicable to next type of parser.
         match arg:
-            case '-h':
-                next_index = self._parse_host(next_index, cli_input_kwargs)
-            case '-p':
-                next_index = self._parse_port(next_index, cli_input_kwargs)
+            case "-b":
+                next_index = self._parse_bind(next_index, cli_input_kwargs)
+            case "--bind":
+                next_index = self._parse_bind(next_index, cli_input_kwargs)
             case '-x':
                 next_index = self._parse_executables_to_execute(
                     next_index, cli_input_kwargs)
@@ -152,7 +156,7 @@ class Cli():
                     raise RedundantFlagCliError()
                 elif arg[0] != '-' and not self._has_to_check_following_values:
                     raise RedundantValueCliError()
-                # i.e. value which wanted to be saved, e.g. for "exec" mode
+                # i.e. value which is wanted to be saved, e.g. for "exec" mode
                 # which doesn't accept flags, but only values
                 else:
                     if cli_input_kwargs['mode_enum'] is HelperAppModeEnum.EXEC:
@@ -169,50 +173,71 @@ class Cli():
 
         self._search_args(next_index, cli_input_kwargs)
 
-    def _parse_host(
+    def _parse_bind(
             self, flag_index: int, cli_input_kwargs: dict
         ) -> int:
         try:
+            # Any occurence of host or port means that --bind have been occured
             cli_input_kwargs['host']
+            cli_input_kwargs['port']
         except KeyError:
             pass
         else:
-            raise RepeatingArgCliError('Flag -h has been defined twice')
+            raise RepeatingArgCliError('Flag --bind has been defined twice')
         
         try:
-            host = self.args[flag_index+1]
+            bind_string: str = self.args[flag_index+1]
         except KeyError:
             raise CliError(
                 'No host specified for defined flag -h')
+
+        host, port = self._parse_bind_string(bind_string)
+
+        cli_input_kwargs['host'] = host
+        cli_input_kwargs['port'] = port
+
+        return flag_index + 1 + 1
+
+    def _parse_bind_string(self, bind_string: str) -> tuple[str, int]:
+        """Parses given bind string and returns tuple of host and port."""
+        host: str = DEFAULT_HOST
+        port: int = DEFAULT_PORT
+
+        colon_splitted: list[str] = bind_string.split(":")
+        
+        if len(colon_splitted) > 2:
+            raise BindStringParsingCliError(
+                f"Wrong format of given bind string: {bind_string}"
+                " - it cannot contain more than one colon"
+            )
+        elif len(colon_splitted) == 2:
+            host = colon_splitted[0]
+            port = int(colon_splitted[1])
+
+            # If port converted to integer, it 100% sure that colon_splitted[0]
+            # wasn't an empty string, so we can recover host to initial state
+            # for input case of colon+port, like: "--bind :5000"
+            if host == "":
+                host = DEFAULT_HOST
+        elif len(colon_splitted) == 1:
+            # On single element given to bind, this element could be either
+            # host or port
+            try:
+                port = int(colon_splitted[0]) 
+            except ValueError:
+                host = colon_splitted[0]
         else:
-            # Pattern from: https://stackoverflow.com/a/36760050
+            # Other cases are impossible after split()
+            raise
+    
+        # Pattern from https://stackoverflow.com/a/36760050
+        if host != DEFAULT_HOST:
             validation.validate_re(
                 host,
-                r'^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}$')
-        cli_input_kwargs['host'] = host
-        return flag_index + 1 + 1
-                        
-    def _parse_port(
-            self, flag_index: int, cli_input_kwargs: dict
-        ) -> int:
-            try:
-                cli_input_kwargs['port']
-            except KeyError:
-                pass
-            else:
-                raise RepeatingArgCliError('Flag -p has been defined twice')
+                r'^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}$'
+            )
 
-            try:
-                port = self.args[flag_index+1]
-            except KeyError:
-                raise CliError(
-                    'No port specified for defined flag -p')
-            else:
-                validation.validate_re(
-                    port,
-                    r'^\d+$')
-            cli_input_kwargs['port'] = port
-            return flag_index + 1 + 1
+        return (host, port)
 
     def _parse_executables_to_execute(
             self, flag_index: int, cli_input_kwargs: dict
@@ -230,22 +255,15 @@ class Cli():
 
         # Iterate and add executables until face another flag
         # e.g. in case "staze dev -x exec1 exec2 exec3 -h 0.0.0.0"
-        #
-        # NOTE:
-        #   Pytest is using -x flag too, but anyway such collection is
-        #   persormed even in test mode since we anyway need index of next
-        #   flag. Assembler will take the rest of the separation logic.
-        #
         for name in self.args[flag_index+1:]:
             if '-' in name:
                 break
             executables_to_execute.append(name)
 
-        if cli_input_kwargs['mode_enum'] is not RunAppModeEnum.TEST:
-            if executables_to_execute == []:
-                raise CliError(
-                    'No executables specified for flag -x')
-            cli_input_kwargs['executables_to_execute'] = executables_to_execute
+        if executables_to_execute == []:
+            raise CliError(
+                'No executables specified for flag -x')
+        cli_input_kwargs['executables_to_execute'] = executables_to_execute
         # Return index of the next flag counting amount of added cli
         # arguments
         return flag_index + len(executables_to_execute) + 1

@@ -11,7 +11,7 @@ upgrade:
 	python -m staze upgrade
 
 test: init migrate upgrade
-	python -m staze test -x app/user
+	python -m staze test -x app/user -p no:warnings
 
 dev: init migrate upgrade
 	python -m staze dev -x create_all add_user
