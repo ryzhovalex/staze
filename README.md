@@ -1,7 +1,7 @@
 Staze
 ===
 
-PROTOTYPE: Project receiving out-of-version updates and backward compatibility may be broken any time.
+ARCHIVED: Are converted to [Orwynn](https://github.com/ryzhovalex/orwynn), which inherited some of the old ideas, but started to utilize FastAPI in it's core.
 
 Layer over Flask upgraded by MVC, SQLAlchemy, Migrations and other cool guys.
 
